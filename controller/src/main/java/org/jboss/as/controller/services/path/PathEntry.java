@@ -97,7 +97,7 @@ public class PathEntry {
      *
      * @return {@code true} if the path is immutable
      */
-    boolean isReadOnly() {
+    public boolean isReadOnly() {
         return readOnly;
     }
 

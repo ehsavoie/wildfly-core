@@ -3526,4 +3526,7 @@ public interface ControllerLogger extends BasicLogger {
             "to learn more about the deprecation.")
     String operationDeprecatedMessage(String name, String address);
 
+
+    @Message(id = 450, value = "Cannot synchronize the model due to missing extensions: %s")
+    OperationFailedException missingExtensions(Set<String> missingExtensions);
 }

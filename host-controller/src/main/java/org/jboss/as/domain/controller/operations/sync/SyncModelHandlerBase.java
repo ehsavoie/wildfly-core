@@ -20,26 +20,20 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.jboss.as.domain.controller.operations;
+package org.jboss.as.domain.controller.operations.sync;
 
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DOMAIN_MODEL;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILURE_DESCRIPTION;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RESULT;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import org.jboss.as.controller.ModelController;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
-import org.jboss.as.controller.operations.common.OrderedChildTypesAttachment;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.transform.Transformers;
-import org.jboss.as.domain.controller.operations.deployment.SyncModelParameters;
-import org.jboss.as.host.controller.mgmt.HostControllerRegistrationHandler;
 import org.jboss.dmr.ModelNode;
 
 /**
@@ -49,16 +43,9 @@ abstract class SyncModelHandlerBase implements OperationStepHandler {
 
     // Create a local transformer for now, maybe just bypass transformation and only worry about the ignored resources
     private static final Transformers TRANSFORMERS = Transformers.Factory.createLocal();
-    private static final ModelNode OPERATION = new ModelNode();
+    protected final DomainSyncModelParameters parameters;
 
-    static {
-        OPERATION.get(OP).set("sync");
-        OPERATION.get(OP_ADDR).setEmptyList();
-    }
-
-    private final SyncModelParameters parameters;
-
-    protected SyncModelHandlerBase(SyncModelParameters parameters) {
+    protected SyncModelHandlerBase(DomainSyncModelParameters parameters) {
         this.parameters = parameters;
     }
 
@@ -73,9 +60,7 @@ abstract class SyncModelHandlerBase implements OperationStepHandler {
         final Transformers.ResourceIgnoredTransformationRegistry ignoredTransformationRegistry = createRegistry(context, remote, remoteExtensions);
 
         // Describe the local model
-        final ReadDomainModelHandler readModelHandler = new ReadDomainModelHandler(ignoredTransformationRegistry, TRANSFORMERS, true);
-        final HostControllerRegistrationHandler.OperationExecutor operationExecutor = parameters.getOperationExecutor();
-        final ModelNode localModel = operationExecutor.executeReadOnly(OPERATION, readModelHandler, ModelController.OperationTransactionControl.COMMIT);
+        final ModelNode localModel = parameters.readLocalModel(new ReadDomainModelHandler(ignoredTransformationRegistry, TRANSFORMERS, true));
         if (localModel.hasDefined(FAILURE_DESCRIPTION)) {
             context.getFailureDescription().set(localModel.get(FAILURE_DESCRIPTION));
             return;
@@ -86,9 +71,8 @@ abstract class SyncModelHandlerBase implements OperationStepHandler {
         final Resource transformedResource = ReadMasterDomainModelUtil.createResourceFromDomainModelOp(localModel.get(RESULT), localExtensions);
 
         // Create the local describe operations
-        final OrderedChildTypesAttachment orderedChildTypesAttachment = new OrderedChildTypesAttachment();
         final ReadMasterDomainOperationsHandler readOperationHandler = new ReadMasterDomainOperationsHandler();
-        final ModelNode localOperations = operationExecutor.executeReadOnly(OPERATION, transformedResource, readOperationHandler, ModelController.OperationTransactionControl.COMMIT);
+        final ModelNode localOperations = parameters.readLocalOperations(transformedResource, readOperationHandler);
         if (localOperations.hasDefined(FAILURE_DESCRIPTION)) {
             context.getFailureDescription().set(localOperations.get(FAILURE_DESCRIPTION));
             return;
@@ -103,15 +87,11 @@ abstract class SyncModelHandlerBase implements OperationStepHandler {
             @Override
             public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
                 final ModelNode result = localOperations.get(RESULT);
-                final SyncModelOperationHandler handler =
-                        new SyncModelOperationHandler(result.asList(), remote, remoteExtensions,
+                final SyncHostModelOperationHandler handler =
+                        new SyncHostModelOperationHandler(result.asList(), remote, remoteExtensions,
                                 parameters, readOperationHandler.getOrderedChildTypes());
                 context.addStep(operation, handler, OperationContext.Stage.MODEL, true);
             }
         }, OperationContext.Stage.MODEL, true);
-    }
-
-    protected SyncModelParameters getParameters() {
-        return parameters;
     }
 }

@@ -19,8 +19,9 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.as.domain.controller.operations;
+package org.jboss.as.domain.controller.operations.sync;
 
+import org.jboss.as.controller.operations.sync.GenericModelDescribeOperationHandler;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DOMAIN_MODEL;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.GROUP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HOST;
@@ -66,7 +67,6 @@ import org.jboss.as.controller.operations.global.GlobalNotifications;
 import org.jboss.as.controller.operations.global.GlobalOperationHandlers;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
-import org.jboss.as.domain.controller.operations.deployment.SyncModelParameters;
 import org.jboss.as.domain.controller.resources.ProfileResourceDefinition;
 import org.jboss.as.domain.controller.resources.ServerGroupResourceDefinition;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
@@ -358,8 +358,8 @@ public class AbstractOrderedChildResourceSyncModelTestCase extends AbstractContr
 
             final TestRepository repo = new TestRepository();
             final HostControllerRegistrationHandler.OperationExecutor internalExecutor = getControllerService().getInternalExecutor();
-            SyncModelParameters parameters =
-                    new SyncModelParameters(new MockDomainController(), ignoredDomainResourceRegistry,
+            DomainSyncModelParameters parameters =
+                    new DomainSyncModelParameters(new MockExpressionResolver(), ignoredDomainResourceRegistry,
                             hostControllerEnvironment, extensionRegistry, internalExecutor, true,
                             Collections.<String, ProxyController>emptyMap(), repo, repo);
             final SyncServerGroupOperationHandler handler =

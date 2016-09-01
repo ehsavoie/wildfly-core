@@ -1,4 +1,4 @@
-package org.jboss.as.domain.controller.operations;
+package org.jboss.as.domain.controller.operations.sync;
 
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.BOOT_TIME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CONTENT;
@@ -78,7 +78,6 @@ import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.services.path.PathManagerService;
 import org.jboss.as.domain.controller.HostRegistrations;
-import org.jboss.as.domain.controller.operations.deployment.SyncModelParameters;
 import org.jboss.as.domain.controller.resources.DomainRootDefinition;
 import org.jboss.as.domain.management.CoreManagementResourceDefinition;
 import org.jboss.as.host.controller.HostControllerConfigurationPersister;
@@ -795,8 +794,8 @@ public class SyncModelServerStateTestCase extends AbstractControllerTestBase  {
             for (Map.Entry<String, MockServerProxy> entry : SyncModelServerStateTestCase.this.serverProxies.entrySet()) {
                 serverProxies.put(entry.getKey(), entry.getValue());
             }
-            SyncModelParameters parameters =
-                    new SyncModelParameters(new MockDomainController(), ignoredDomainResourceRegistry,
+            DomainSyncModelParameters parameters =
+                    new DomainSyncModelParameters(new MockExpressionResolver(), ignoredDomainResourceRegistry,
                             hostControllerEnvironment, extensionRegistry, internalExecutor, true,
                             serverProxies, repository, repository);
             final Resource hostResource =

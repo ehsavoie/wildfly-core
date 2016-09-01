@@ -42,7 +42,7 @@ import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
 import org.jboss.as.domain.controller.operations.DomainIncludesValidationWriteAttributeHandler;
-import org.jboss.as.domain.controller.operations.GenericModelDescribeOperationHandler;
+import org.jboss.as.controller.operations.sync.GenericModelDescribeOperationHandler;
 import org.jboss.as.domain.controller.operations.ProfileAddHandler;
 import org.jboss.as.domain.controller.operations.ProfileCloneHandler;
 import org.jboss.as.domain.controller.operations.ProfileDescribeHandler;
