@@ -22,6 +22,7 @@
 
 package org.jboss.as.domain.controller.operations;
 
+import org.jboss.as.controller.operations.sync.GenericModelDescribeOperationHandler;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CLONE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.FAILURE_DESCRIPTION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;

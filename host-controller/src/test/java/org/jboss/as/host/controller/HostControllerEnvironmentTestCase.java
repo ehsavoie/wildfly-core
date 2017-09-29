@@ -72,7 +72,7 @@ public class HostControllerEnvironmentTestCase {
 
     @Test
     public void testUUIDLifeCycle() throws IOException {
-        Map<String, String> hostProperties = new HashMap();
+        Map<String, String> hostProperties = new HashMap<>();
         Path domainDir = homeDir.resolve("domain");
         Files.createDirectories(domainDir.resolve("configuration"));
         Path uuidPath = domainDir.resolve("data").resolve("kernel").resolve("process-uuid");

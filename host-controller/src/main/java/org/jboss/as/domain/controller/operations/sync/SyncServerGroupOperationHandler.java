@@ -20,7 +20,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.jboss.as.domain.controller.operations;
+package org.jboss.as.domain.controller.operations.sync;
 
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HOST;
 
@@ -31,7 +31,6 @@ import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.transform.Transformers;
-import org.jboss.as.domain.controller.operations.deployment.SyncModelParameters;
 
 /**
  * This operation handler is only getting executed on a slave host-controller, synchronizing the model for a
@@ -46,14 +45,12 @@ public class SyncServerGroupOperationHandler extends SyncModelHandlerBase {
 
     private final String localHostName;
     private final Resource originalModel;
-    private final SyncModelParameters parameters;
 
     public SyncServerGroupOperationHandler(String localHostName, Resource originalDomainModel,
-                                           SyncModelParameters parameters) {
+                                           DomainSyncModelParameters parameters) {
         super(parameters);
         this.localHostName = localHostName;
         this.originalModel = originalDomainModel;
-        this.parameters = parameters;
     }
 
     /**
@@ -66,7 +63,7 @@ public class SyncServerGroupOperationHandler extends SyncModelHandlerBase {
      * @return
      */
     @Override
-    Transformers.ResourceIgnoredTransformationRegistry createRegistry(OperationContext context, Resource remote, Set<String> remoteExtensions) {
+    protected Transformers.ResourceIgnoredTransformationRegistry createRegistry(OperationContext context, Resource remote, Set<String> remoteExtensions) {
         final ReadMasterDomainModelUtil.RequiredConfigurationHolder rc = new ReadMasterDomainModelUtil.RequiredConfigurationHolder();
 
         final PathElement host = PathElement.pathElement(HOST, localHostName);
@@ -81,7 +78,7 @@ public class SyncServerGroupOperationHandler extends SyncModelHandlerBase {
         final Transformers.ResourceIgnoredTransformationRegistry delegate = new Transformers.ResourceIgnoredTransformationRegistry() {
             @Override
             public boolean isResourceTransformationIgnored(PathAddress address) {
-                return parameters.getIgnoredResourceRegistry().isResourceExcluded(address);
+                return parameters.isResourceExcluded(address);
             }
         };
         return ReadMasterDomainModelUtil.createServerIgnoredRegistry(rc, delegate);

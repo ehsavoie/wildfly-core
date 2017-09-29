@@ -3518,4 +3518,7 @@ public interface ControllerLogger extends BasicLogger {
             "or itself configures a requirement for a capability provided by another part of the configuration. " +
             "Full support for this kind of configuration cannot be provided when an expression is used.")
     void attributeExpressionDeprecated(String name, String address);
+
+    @Message(id = 448, value = "Cannot synchronize the model due to missing extensions: %s")
+    OperationFailedException missingExtensions(Set<String> missingExtensions);
 }

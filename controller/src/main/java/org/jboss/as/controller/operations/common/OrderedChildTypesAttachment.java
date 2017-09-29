@@ -1,13 +1,17 @@
 package org.jboss.as.controller.operations.common;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.controller.registry.Resource;
+import org.jboss.dmr.ModelNode;
+import org.jboss.dmr.Property;
 
 /**
  * We currently only care about ordered child resources when describing the model for the use of the sync handlers.
@@ -17,7 +21,7 @@ import org.jboss.as.controller.registry.Resource;
  * @author <a href="mailto:kabir.khan@jboss.com">Kabir Khan</a>
  */
 public class OrderedChildTypesAttachment {
-
+    public static final String ORDERED_CHILDREN = "ordered-children";
     public static final OperationContext.AttachmentKey<OrderedChildTypesAttachment> KEY =
             OperationContext.AttachmentKey.create(OrderedChildTypesAttachment.class);
 
@@ -50,5 +54,24 @@ public class OrderedChildTypesAttachment {
         return orderedChildren.get(lookupAddress);
     }
 
+    public ModelNode toModel() {
+        ModelNode model = new ModelNode();
+        for(Map.Entry<PathAddress, Set<String>> child:  orderedChildren.entrySet()) {
+            String address = child.getKey().toCLIStyleString();
+            model.get(address).setEmptyList();
+            for(String name : child.getValue()) {
+                model.get(address).add(name);
+            }
+        }
+        return model;
+    }
 
+    public void fromModel(ModelNode model) {
+        List<Property> properties = model.asPropertyList();
+        orderedChildren.clear();
+        properties.forEach((child) -> {
+            orderedChildren.put(PathAddress.parseCLIStyleAddress(child.getName()), child.getValue().asList().stream().map(ModelNode::asString).collect(Collectors.toSet()));
+        });
+
+    }
 }
