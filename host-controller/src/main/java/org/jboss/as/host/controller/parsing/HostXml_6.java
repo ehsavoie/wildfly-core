@@ -348,7 +348,7 @@ final class HostXml_6 extends CommonXml implements ManagementXmlDelegate {
         }
         if (element == Element.MANAGEMENT) {
             ManagementXml managementXml = ManagementXml.newInstance(namespace, this, false);
-            managementXml.parseManagement(reader, address, list, true);
+            managementXml.parseManagement(reader, address, list, false);
             element = nextElement(reader, namespace);
         } else {
             throw missingRequiredElement(reader, EnumSet.of(Element.MANAGEMENT));

@@ -81,6 +81,16 @@ public class DelegatingImmutableManagementResourceRegistration implements Immuta
     }
 
     @Override
+    public String getFeature() {
+        return delegate.getFeature();
+    }
+
+    @Override
+    public boolean isFeature() {
+        return delegate.isFeature();
+    }
+
+    @Override
     public boolean isRuntimeOnly() {
         return delegate.isRuntimeOnly();
     }

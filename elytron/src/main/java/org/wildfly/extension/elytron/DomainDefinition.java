@@ -184,7 +184,6 @@ class DomainDefinition extends SimpleResourceDefinition {
     static final SimpleAttributeDefinition OUTFLOW_ANONYMOUS = new SimpleAttributeDefinitionBuilder(ElytronDescriptionConstants.OUTFLOW_ANONYMOUS, ModelType.BOOLEAN, true)
             .setAllowExpression(true)
             .setDefaultValue(new ModelNode(false))
-            .setRequires(ElytronDescriptionConstants.OUTFLOW_SECURITY_DOMAINS)
             .setMinSize(1)
             .setFlags(AttributeAccess.Flag.RESTART_RESOURCE_SERVICES)
             .build();

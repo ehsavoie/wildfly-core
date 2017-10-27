@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature-group-spec name="host-default-security-realms" xmlns="urn:wildfly:pm-feature-group:1.0">
+    <feature-group name="host-security-realms">
+        <include feature-id="host.core-service.management.security-realm:core-service=management,security-realm=ManagementRealm">
+            <feature spec="host.core-service.management.security-realm.authentication.properties">
+                <param name="relative-to" value="jboss.domain.config.dir"/>
+            </feature>
+            <feature spec="host.core-service.management.security-realm.authorization.properties">
+                <param name="relative-to" value="jboss.domain.config.dir"/>
+            </feature>
+        </include>
+        <include feature-id="host.core-service.management.security-realm:core-service=management,security-realm=ApplicationRealm">
+            <feature spec="host.core-service.management.security-realm.authentication.properties">
+                <param name="relative-to" value="jboss.domain.config.dir"/>
+            </feature>
+            <feature spec="host.core-service.management.security-realm.authorization.properties">
+                <param name="relative-to" value="jboss.domain.config.dir"/>
+            </feature>
+        </include>
+        <exclude feature-id="host.core-service.management.security-realm.server-identity.ssl:core-service=management,security-realm=ApplicationRealm,server-identity=ssl"/>
+    </feature-group>
+</feature-group-spec>

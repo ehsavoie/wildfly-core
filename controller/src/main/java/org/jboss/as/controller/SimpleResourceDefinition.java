@@ -69,6 +69,7 @@ public class SimpleResourceDefinition implements ResourceDefinition {
     private final List<AccessConstraintDefinition> accessConstraints;
     private final int minOccurs;
     private final int maxOccurs;
+    private boolean feature;
 
     /**
      * {@link ResourceDefinition} that uses the given {code descriptionProvider} to describe the resource.
@@ -97,6 +98,7 @@ public class SimpleResourceDefinition implements ResourceDefinition {
         this.accessConstraints = Collections.emptyList();
         this.minOccurs = 0;
         this.maxOccurs = Integer.MAX_VALUE;
+        this.feature = true;
     }
 
     /**
@@ -300,6 +302,7 @@ public class SimpleResourceDefinition implements ResourceDefinition {
         }
         this.minOccurs = parameters.minOccurs;
         this.maxOccurs = parameters.maxOccurs;
+        this.feature = parameters.feature;
     }
 
     private static OperationEntry.Flag restartLevelForAdd(OperationStepHandler addHandler) {
@@ -408,7 +411,6 @@ public class SimpleResourceDefinition implements ResourceDefinition {
                 .setEntryType(entryType)
                 .setDescriptionProvider(descriptionProvider)
                 .build();
-
     }
 
     /**
@@ -505,6 +507,7 @@ public class SimpleResourceDefinition implements ResourceDefinition {
         return maxOccurs;
     }
 
+
     /**
      * Whether this resource registration is ordered in the parent. The automatically generated 'add' operation will
      * get the {@code add-index} parameter added. Also, it will get registered as an ordered child in the parent's
@@ -515,6 +518,11 @@ public class SimpleResourceDefinition implements ResourceDefinition {
     @SuppressWarnings("deprecation")
     public boolean isOrderedChild() {
         return orderedChild;
+    }
+
+    @Override
+    public boolean isFeature() {
+        return feature;
     }
 
     /**
@@ -533,6 +541,7 @@ public class SimpleResourceDefinition implements ResourceDefinition {
         private RuntimeCapability[] capabilities;
         private Set<RuntimeCapability> incorporatingCapabilities;
         private AccessConstraintDefinition[] accessConstraints;
+        private boolean feature = true;
         private int minOccurs = 0;
         private int maxOccurs = Integer.MAX_VALUE;
         /**
@@ -743,7 +752,15 @@ public class SimpleResourceDefinition implements ResourceDefinition {
             this.minOccurs = minOccurs;
             return this;
         }
-
+/**
+         * set the feature nature of this resource
+         * @param feature true if this resource is a feature
+         * @return Parameters object
+         */
+        public Parameters setFeature(final boolean feature){
+            this.feature = feature;
+            return this;
+        }
         /**
          * Registers a set of capabilities that this resource does not directly provide but to which it contributes. This
          * will only include capabilities for which this resource <strong>does not</strong> control the

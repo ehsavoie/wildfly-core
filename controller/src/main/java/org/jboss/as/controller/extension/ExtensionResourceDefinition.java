@@ -48,7 +48,8 @@ import org.jboss.dmr.ModelType;
 public class ExtensionResourceDefinition extends SimpleResourceDefinition {
 
     public static final SimpleAttributeDefinition MODULE = new SimpleAttributeDefinitionBuilder(ModelDescriptionConstants.MODULE, ModelType.STRING, false)
-            .setValidator(new StringLengthValidator(1)).build();
+            .setValidator(new StringLengthValidator(1))
+            .build();
 
     private static final OperationDefinition ADD_OP = new SimpleOperationDefinitionBuilder(ADD, ControllerResolver.getResolver(EXTENSION))
             .addParameter(new SimpleAttributeDefinitionBuilder(ModelDescriptionConstants.MODULE, ModelType.STRING, true)

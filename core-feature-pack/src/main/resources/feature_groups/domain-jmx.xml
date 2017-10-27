@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature-group-spec name="domain-jmx" xmlns="urn:wildfly:pm-feature-group:1.0">
+    <feature spec="profile.subsystem.jmx">
+        <feature spec="profile.subsystem.jmx.expose-model.expression" />
+        <feature spec="profile.subsystem.jmx.expose-model.resolved" />
+        <feature spec="profile.subsystem.jmx.remoting-connector.jmx"/>
+    </feature>
+</feature-group-spec>

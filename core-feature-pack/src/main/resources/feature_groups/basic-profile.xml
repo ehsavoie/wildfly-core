@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature-group-spec name="basic-profile" xmlns="urn:wildfly:pm-feature-group:1.0">
+    <feature-group name="logging"/>
+    <feature-group name="core-management"/>
+    <feature spec="subsystem.elytron">
+        <feature-group name="elytron-common"/>
+        <feature-group name="elytron-app"/>
+    </feature>
+    <feature-group name="jmx"/>
+    <feature-group name="request-controller"/>
+</feature-group-spec>

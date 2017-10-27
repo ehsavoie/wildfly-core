@@ -139,6 +139,11 @@ final class ConcreteResourceRegistration extends AbstractResourceRegistration {
     }
 
     @Override
+    public boolean isFeature() {
+        return resourceDefinition.isFeature();
+    }
+
+    @Override
     public boolean isRuntimeOnly() {
         checkPermission();
         readLock.lock();

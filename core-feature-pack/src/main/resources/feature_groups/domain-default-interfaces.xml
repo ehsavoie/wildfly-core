@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature-group-spec name="domain-default-interfaces" xmlns="urn:wildfly:pm-feature-group:1.0">
+    <feature-group name="domain-interfaces"/>
+    <feature spec="domain.interface">
+        <param name="interface" value="unsecure"/>
+        <param name="inet-address" value="${jboss.bind.address.unsecure:127.0.0.1}"/>
+    </feature>
+</feature-group-spec>

@@ -551,7 +551,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
     protected void initModel(ManagementModel managementModel, Resource modelControllerResource) {
         HostModelUtil.createRootRegistry(managementModel.getRootResourceRegistration(), environment,
                 ignoredRegistry, this, processType, authorizer, modelControllerResource,
-                hostControllerInfo);
+                hostControllerInfo, managementModel.getCapabilityRegistry());
         VersionModelInitializer.registerRootResource(managementModel.getRootResource(), environment != null ? environment.getProductConfig() : null);
         CoreManagementResourceDefinition.registerDomainResource(managementModel.getRootResource(), authorizer.getWritableAuthorizerConfiguration());
         this.modelNodeRegistration = managementModel.getRootResourceRegistration();
