@@ -49,6 +49,7 @@ import org.jboss.as.controller.security.CredentialReference;
 import org.jboss.as.remoting.Protocol;
 import org.jboss.as.server.controller.descriptions.ServerDescriptions;
 import org.jboss.as.server.operations.sync.ScriptModelDiffWrapplerHandler;
+import org.jboss.as.server.operations.sync.ServerFeaturesDiffWrapplerHandler;
 import org.jboss.as.server.operations.sync.SynchronizationService;
 import org.jboss.as.server.operations.sync.SynchronizationWrapperHandler;
 import org.jboss.dmr.ModelNode;
@@ -128,6 +129,7 @@ public class SynchronizationResourceDefinition extends SimpleResourceDefinition 
         this.registerAddOperation(resourceRegistration, new SynchronizationResourceAddHandler(ATTRIBUTES));
         resourceRegistration.registerOperationHandler(SynchronizationWrapperHandler.DEFINITION, new SynchronizationWrapperHandler());
         resourceRegistration.registerOperationHandler(ScriptModelDiffWrapplerHandler.DEFINITION, new ScriptModelDiffWrapplerHandler());
+        resourceRegistration.registerOperationHandler(ServerFeaturesDiffWrapplerHandler.DEFINITION, new ServerFeaturesDiffWrapplerHandler());
     }
 
     private class SynchronizationResourceAddHandler extends AbstractAddStepHandler {

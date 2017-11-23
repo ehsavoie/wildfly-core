@@ -49,7 +49,7 @@ public class SynchronizationWrapperHandler implements OperationStepHandler {
     @Override
     public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
         boolean dryRun = DRY_RUN.resolveModelAttribute(context, operation).asBoolean();
-        ((SynchronizationService) context.getServiceRegistry(false).getRequiredService(SynchronizationService.SERVICE_NAME).getService()).synchronize(context, dryRun, false);
+        ((SynchronizationService) context.getServiceRegistry(false).getRequiredService(SynchronizationService.SERVICE_NAME).getService()).synchronize(context, dryRun, false, false);
     }
 
 }

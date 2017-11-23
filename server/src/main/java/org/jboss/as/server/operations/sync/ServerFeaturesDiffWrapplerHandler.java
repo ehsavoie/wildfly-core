@@ -25,7 +25,7 @@ import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.SimpleOperationDefinition;
 import org.jboss.as.controller.SimpleOperationDefinitionBuilder;
 import org.jboss.as.controller.access.management.SensitiveTargetAccessConstraintDefinition;
-import org.jboss.as.controller.registry.OperationEntry.Flag;
+import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.as.server.controller.descriptions.ServerDescriptions;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
@@ -34,16 +34,16 @@ import org.jboss.dmr.ModelType;
  *
  * @author Emmanuel Hugonnet (c) 2017 Red Hat, inc.
  */
-public class ScriptModelDiffWrapplerHandler implements OperationStepHandler {
-    public static final SimpleOperationDefinition DEFINITION = new SimpleOperationDefinitionBuilder("export-diff", ServerDescriptions.getResourceDescriptionResolver(SERVER))
+public class ServerFeaturesDiffWrapplerHandler implements OperationStepHandler {
+    public static final SimpleOperationDefinition DEFINITION = new SimpleOperationDefinitionBuilder("feature-diff", ServerDescriptions.getResourceDescriptionResolver(SERVER))
             .setReplyParameters(new SimpleAttributeDefinitionBuilder(UUID, ModelType.STRING, false).build())
-            .withFlags(Flag.READ_ONLY)
+            .withFlags(OperationEntry.Flag.READ_ONLY)
             .addAccessConstraint(SensitiveTargetAccessConstraintDefinition.READ_WHOLE_CONFIG)
             .build();
 
     @Override
     public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
-        ((SynchronizationService) context.getServiceRegistry(false).getRequiredService(SynchronizationService.SERVICE_NAME).getService()).synchronize(context, true, true, false);
+        ((SynchronizationService) context.getServiceRegistry(false).getRequiredService(SynchronizationService.SERVICE_NAME).getService()).synchronize(context, true, true, true);
     }
 
 }

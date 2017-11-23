@@ -49,11 +49,13 @@ public class ServerSyncOperationHandler implements OperationStepHandler {
     protected final ServerSyncModelParameters parameters;
     protected final boolean dryRun;
     protected final boolean export;
+    protected final boolean config;
 
-    protected ServerSyncOperationHandler(ServerSyncModelParameters parameters, final boolean dryRun, final boolean export) {
+    protected ServerSyncOperationHandler(ServerSyncModelParameters parameters, final boolean dryRun, final boolean export, boolean config) {
         this.parameters = parameters;
         this.dryRun = dryRun;
         this.export = export;
+        this.config = config;
     }
 
 
@@ -119,12 +121,17 @@ public class ServerSyncOperationHandler implements OperationStepHandler {
                 }
                 final ServerModelSyncOperationHandler handler;
                 if (dryRun) {
-                    if(export) {
-                         handler = new ServerModelDiffExportOperationHandler(result.asList(), remote, remoteExtensions,
-                            parameters, orderedChildTypesAttachment, missingExtensions, superfluousExtensions);
+                    if (export) {
+                        if(config) {
+                            handler = new ServerFeatureDiffExportOperationHandler(result.asList(), remote, remoteExtensions,
+                                    parameters, orderedChildTypesAttachment, missingExtensions, superfluousExtensions);
+                        } else {
+                            handler = new ServerModelDiffExportOperationHandler(result.asList(), remote, remoteExtensions,
+                                    parameters, orderedChildTypesAttachment, missingExtensions, superfluousExtensions);
+                        }
                     } else {
-                    handler = new ServerModelDiffOperationHandler(result.asList(), remote, remoteExtensions,
-                            parameters, orderedChildTypesAttachment, missingExtensions, superfluousExtensions);
+                        handler = new ServerModelDiffOperationHandler(result.asList(), remote, remoteExtensions,
+                                parameters, orderedChildTypesAttachment, missingExtensions, superfluousExtensions);
                     }
                 } else {
                     handler = new ServerModelSyncOperationHandler(result.asList(), remote, remoteExtensions,

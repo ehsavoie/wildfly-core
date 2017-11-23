@@ -93,13 +93,13 @@ public class SynchronizationService implements Service<SynchronizationService> {
         client = injectedClientFactory.getValue().createClient(injectedExecutor.getValue());
     }
 
-    public void synchronize(final OperationContext context, boolean dryRun, boolean export) {
+    public void synchronize(final OperationContext context, boolean dryRun, boolean export, boolean config) {
         final ServerSyncModelParameters parameters = new ServerSyncModelParameters(this, expressionResolver,
                 injectedServerEnvironment.getValue(), extensionRegistry, injectedPathManager.getValue(), true);
         context.addStep(new OperationStepHandler() {
             @Override
             public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
-                ServerSyncOperationHandler handler = new ServerSyncOperationHandler(parameters, dryRun, export);
+                ServerSyncOperationHandler handler = new ServerSyncOperationHandler(parameters, dryRun, export, config);
                 // Create the operation to get the required configuration from the master
                 ModelNode response = readRemoteModel();
                 ModelNode result = Operations.readResult(response);
