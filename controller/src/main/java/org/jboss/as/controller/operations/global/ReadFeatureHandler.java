@@ -183,6 +183,14 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
         final PathAddress pa = registry.getPathAddress();
         final ModelNode feature = describeFeature(locale, registry, CapabilityScope.Factory.create(context.getProcessType(), pa),
                 isProfileScope(context.getProcessType(), pa));
+        if(pa.size() == 0 && context.getProcessType().isServer()) { //server-root feature spec
+            ModelNode param = new ModelNode();
+            param.get(ModelDescriptionConstants.NAME).set("server-root");
+            param.get(ModelDescriptionConstants.DEFAULT).set("/");
+            param.get(FEATURE_ID).set(true);
+            feature.require(FEATURE).get(PARAMETERS).add(param);
+            feature.require(FEATURE).require(ANNOTATION).get(ADDRESS_PARAMETERS).set("server-root");
+        }
 
         if (pa.getLastElement() != null && SUBSYSTEM.equals(pa.getLastElement().getKey())) {
             String extension = getExtension(context, pa.getLastElement().getValue());
@@ -222,6 +230,9 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
                     readChild = false;
                 }
                 if (childReg.isRuntimeOnly()) {
+                    readChild = false;
+                }
+                if (!childReg.isFeature()) {
                     readChild = false;
                 }
 
@@ -566,6 +577,10 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
     }
 
     private void addReference(ModelNode refs, ImmutableManagementResourceRegistration registration, Map<String, String> featureParamMappings) {
+        PathAddress address = registration.getPathAddress();
+        if (address == null || PathAddress.EMPTY_ADDRESS.equals(address)) {
+            return;
+        }
         if (registration.isFeature()) {
             ModelNode ref = new ModelNode();
             ref.get(FEATURE).set(registration.getFeature());

@@ -106,6 +106,9 @@ public interface ImmutableManagementResourceRegistration {
 
     default String getFeature() {
         if(PathAddress.EMPTY_ADDRESS.equals(getPathAddress())) {
+            if(getProcessType().isServer()) {
+                return "server-root";
+            }
             return "";
         }
         StringJoiner joiner = new StringJoiner(".");
