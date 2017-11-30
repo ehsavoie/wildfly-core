@@ -260,7 +260,7 @@ public class ServerRootResourceDefinition extends SimpleResourceDefinition {
                         PATH_CAPABILITY.fromBaseCapability(ServerEnvironment.SERVER_LOG_DIR),
                         PATH_CAPABILITY.fromBaseCapability(ServerEnvironment.SERVER_TEMP_DIR),
                         PATH_CAPABILITY.fromBaseCapability(ServerEnvironment.CONTROLLER_TEMP_DIR))
-                .setFeature(false));
+                .setFeature(true));
         this.contentRepository = contentRepository;
         this.extensibleConfigurationPersister = extensibleConfigurationPersister;
         this.serverEnvironment = serverEnvironment;
