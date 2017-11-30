@@ -9,7 +9,7 @@
     <feature spec="subsystem.elytron.security-domain">
         <param name="security-domain" value="ApplicationDomain"/>
         <param name="default-realm" value="ApplicationRealm"/>
-        <param name="outflow-security-domains" value="undefined"/>
+        <param name="outflow-security-domains" value="[PM_UNDEFINED]"/>
         <param name="permission-mapper" value="default-permission-mapper"/>
         <param name="realms" value="[{realm=ApplicationRealm,role-decoder=groups-to-roles}]"/>
     </feature>

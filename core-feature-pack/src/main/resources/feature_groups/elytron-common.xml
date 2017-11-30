@@ -11,7 +11,7 @@
         </feature>
         <feature spec="subsystem.elytron.aggregate-providers">
             <param name="aggregate-providers" value="combined-providers"/>
-            <param name="providers" value="[&quot;elytron&quot;,&quot;openssl&quot;]"/>
+            <param name="providers" value="[elytron,openssl]"/>
         </feature>
         <feature spec="subsystem.elytron.identity-realm">
             <param name="identity-realm" value="local"/>
@@ -59,6 +59,6 @@
         </feature>
         <feature spec="subsystem.elytron.constant-role-mapper">
             <param name="constant-role-mapper" value="super-user-mapper"/>
-            <param name="roles" value="[&quot;SuperUser&quot;]"/>
+            <param name="roles" value="[SuperUser]"/>
         </feature>
 </feature-group-spec>

@@ -77,6 +77,8 @@ import org.jboss.dmr.Property;
 
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.READ_FEATURE_OPERATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUBSYSTEM;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.TYPE;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.VALUE_TYPE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.WRITE_ATTRIBUTE_OPERATION;
 import static org.jboss.as.controller.registry.AttributeAccess.Storage.CONFIGURATION;
 
@@ -477,6 +479,23 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
             }
             if (attDescription.hasDefined(ModelDescriptionConstants.DEFAULT) && attDescription.hasDefined(CAPABILITY_REFERENCE)) {
                 param.get(ModelDescriptionConstants.DEFAULT).set(attDescription.get(ModelDescriptionConstants.DEFAULT));
+            }
+            if(attDescription.hasDefined(TYPE) && "LIST".equals(attDescription.get(TYPE).asString())) {
+                try {
+                    switch (ModelType.valueOf(attDescription.get(VALUE_TYPE).asString())) {
+                        case STRING:
+                        case INT:
+                        case BIG_DECIMAL:
+                        case BIG_INTEGER:
+                        case DOUBLE:
+                        case LONG:
+                        case BOOLEAN:
+                            param.get(TYPE).set("List<String>");
+                            break;
+                    }
+                } catch (IllegalArgumentException ex) {
+                    //value_type is an object
+                }
             }
             params.add(param);
         }
