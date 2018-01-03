@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature-group-spec name="domain-io" xmlns="urn:wildfly:pm-feature-group:1.0">
+    <feature spec="profile.subsystem.io">
+        <param name="extension" value="org.wildfly.extension.io"/>
+        <param name="subsystem" value="io"/>
+        <feature spec="profile.subsystem.io.buffer-pool">
+            <param name="buffer-pool" value="default"/>
+        </feature>
+        <feature spec="profile.subsystem.io.worker">
+            <param name="worker" value="default"/>
+        </feature>
+    </feature>
+</feature-group-spec>

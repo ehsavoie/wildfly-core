@@ -182,7 +182,7 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
         final Locale locale = GlobalOperationHandlers.getLocale(context, operation);
         final PathAddress pa = registry.getPathAddress();
         final ModelNode feature = describeFeature(locale, registry, CapabilityScope.Factory.create(context.getProcessType(), pa),
-                isProfileScope(context.getProcessType(), pa));
+                isProfileScope(context.getProcessType(), pa), context.getProcessType());
         if(pa.size() == 0 && context.getProcessType().isServer()) { //server-root feature spec
             ModelNode param = new ModelNode();
             param.get(ModelDescriptionConstants.NAME).set("server-root");
@@ -314,7 +314,7 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
     }
 
     private ModelNode describeFeature(final Locale locale, final ImmutableManagementResourceRegistration registration,
-            final CapabilityScope capabilityScope, boolean isProfile) {
+            final CapabilityScope capabilityScope, boolean isProfile, ProcessType process) {
         ModelNode result = new ModelNode();
         if (registration.isFeature()
                 && !registration.isRuntimeOnly()
@@ -377,7 +377,7 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
             Map<String, String> featureParamMappings = addParams(feature, pa, requestProperties);
             complexAttributeChildren(feature, registration);
             addReferences(feature, registration, featureParamMappings);
-            addRequiredCapabilities(feature, registration, requestProperties, capabilityScope, isProfile, capabilities, featureParamMappings);
+            addRequiredCapabilities(feature, registration, requestProperties, capabilityScope, isProfile, capabilities, featureParamMappings, process);
         }
         return result;
     }
@@ -623,7 +623,8 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
             CapabilityScope scope,
             boolean isProfile,
             Set<String> capabilities,
-            Map<String, String> featureParamMappings) {
+            Map<String, String> featureParamMappings,
+            ProcessType process) {
         if (requestProperties.isDefined()) {
             List<Property> request = requestProperties.asPropertyList();
             if (!request.isEmpty()) {
@@ -644,16 +645,20 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
                         if (capReg != null && capReg.getCapability().isDynamicallyNamed()) {
                             capabilityName = baseName + ".$" + att.getName();
                         }
-                        if (isProfile) {
-                            capabilityName = "$profile." + capabilityName;
-                        }
                         if (filteredOut && (capabilityName.startsWith("org.wildfly.domain.server-group.")
                                 || capabilityName.startsWith("org.wildfly.domain.socket-binding-group."))) {
                             continue;
-                        } else {
-                            capability.get(NAME).set(capabilityName);
                         }
                         capability.get("optional").set(att.getValue().hasDefined(NILLABLE) && att.getValue().get(NILLABLE).asBoolean());
+                        if (isProfile) {
+                            if(!capabilityName.startsWith("org.wildfly.network.socket-binding")) {
+                                capabilityName = "$profile." + capabilityName;
+                            }
+//                            if(isGlobalCapability(capReg, process)) {
+//                                capability.get("optional").set(true);
+//                            }
+                        }
+                        capability.get(NAME).set(capabilityName);
                         required.add(capability);
                         if (att.getValue().hasDefined(FEATURE_REFERENCE) && att.getValue().require(FEATURE_REFERENCE).asBoolean()) {
                             if (capReg != null) {
@@ -681,6 +686,15 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
                 }
             }
         }
+    }
+
+    private boolean isGlobalCapability(CapabilityRegistration capReg, ProcessType process) {
+        for (RegistrationPoint regPoint : (Set<RegistrationPoint>) capReg.getRegistrationPoints()) {
+            if (!isProfileScope(process, regPoint.getAddress())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private ImmutableManagementResourceRegistration getRootRegistration(final ImmutableManagementResourceRegistration registration) {
