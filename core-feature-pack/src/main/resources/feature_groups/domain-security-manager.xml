@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature-group-spec name="domain-security-manager" xmlns="urn:wildfly:pm-feature-group:1.0">
+    <feature spec="profile.subsystem.security-manager">
+        <feature spec="profile.subsystem.security-manager.deployment-permissions.default">
+             <param name="deployment-permissions" value="default"/>
+             <param name="maximum-permissions" value="[{class=java.security.AllPermission}]"/>
+        </feature>
+    </feature>
+</feature-group-spec>

@@ -25,6 +25,7 @@ package org.jboss.as.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
@@ -329,6 +330,77 @@ public interface CapabilityReferenceRecorder {
                 dynamicParts.add(dynamicElement);
             }
             return dynamicParts.toArray(new String[dynamicParts.size()]);
+        }
+    }
+
+    class ResourceCapabilityReferenceRecorder implements CapabilityReferenceRecorder {
+        private final Function<PathAddress, String[]> dynamicDependentNameMapper;
+        private final Function<PathAddress, String[]> dynamicRequirementNameMapper;
+        private final String baseRequirementName;
+        private final String baseDependentName;
+
+        public ResourceCapabilityReferenceRecorder(Function<PathAddress, String[]> dynamicDependentNameMapper, String baseDependentName , Function<PathAddress, String[]> dynamicRequirementNameMapper, String baseRequirementName) {
+            this.dynamicDependentNameMapper = dynamicDependentNameMapper;
+            this.dynamicRequirementNameMapper = dynamicRequirementNameMapper;
+            this.baseRequirementName = baseRequirementName;
+            this.baseDependentName = baseDependentName;
+        }
+
+        public ResourceCapabilityReferenceRecorder(Function<PathAddress, String[]> dynamicNameMapper, String baseDependentName, String baseRequirementName) {
+            this.dynamicDependentNameMapper = dynamicNameMapper;
+            this.dynamicRequirementNameMapper = null;
+            this.baseRequirementName = baseRequirementName;
+            this.baseDependentName = baseDependentName;
+        }
+
+        @Override
+        public void addCapabilityRequirements(OperationContext context, Resource resource, String attributeName, String... attributeValues) {
+            processCapabilityRequirement(context, attributeName, false, attributeValues);
+        }
+
+        @Override
+        public void removeCapabilityRequirements(OperationContext context, Resource resource, String attributeName, String... attributeValues) {
+            processCapabilityRequirement(context, attributeName, true, attributeValues);
+        }
+
+        private void processCapabilityRequirement(OperationContext context, String attributeName, boolean remove, String... attributeValues) {
+            String dependentName = getDependentName(context.getCurrentAddress());
+            String requirementName = getRequirementName(context.getCurrentAddress());
+            if (remove) {
+                context.deregisterCapabilityRequirement(requirementName, dependentName);
+            } else {
+                context.registerAdditionalCapabilityRequirement(requirementName, dependentName, attributeName);
+            }
+        }
+
+        private String getDependentName(PathAddress address) {
+            if (dynamicDependentNameMapper != null) {
+                return RuntimeCapability.buildDynamicCapabilityName(baseDependentName, dynamicDependentNameMapper.apply(address));
+            }
+            return baseDependentName;
+        }
+
+        private String getRequirementName(PathAddress address) {
+            if (dynamicRequirementNameMapper != null) {
+                return RuntimeCapability.buildDynamicCapabilityName(baseRequirementName, dynamicRequirementNameMapper.apply(address));
+            }
+            return baseRequirementName;
+        }
+
+
+        @Override
+        public String getBaseDependentName() {
+            return baseDependentName;
+        }
+
+        @Override
+        public String getBaseRequirementName() {
+            return baseRequirementName;
+        }
+
+        @Override
+        public boolean isDynamicDependent() {
+            return dynamicDependentNameMapper != null;
         }
     }
 

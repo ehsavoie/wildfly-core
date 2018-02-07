@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.as.controller.AttributeDefinition;
+import org.jboss.as.controller.CapabilityReferenceRecorder;
 import org.jboss.as.controller.NotificationDefinition;
 import org.jboss.as.controller.OperationDefinition;
 import org.jboss.as.controller.OperationStepHandler;
@@ -214,6 +215,11 @@ final class AliasResourceRegistration extends AbstractResourceRegistration imple
     }
 
     @Override
+    public void registerRequirements(Set<CapabilityReferenceRecorder> requirements) {
+        throw alreadyRegistered();
+    }
+
+    @Override
     void getOperationDescriptions(final ListIterator<PathElement> iterator, final Map<String, OperationEntry> providers, final boolean inherited) {
         Map<String, OperationEntry> temp = new HashMap<String, OperationEntry>();
         target.getOperationDescriptions(iterator, temp, inherited);
@@ -334,5 +340,10 @@ final class AliasResourceRegistration extends AbstractResourceRegistration imple
     @Override
     Set<RuntimeCapability> getIncorporatingCapabilities(ListIterator<PathElement> iterator) {
         return target.getIncorporatingCapabilities(iterator);
+    }
+
+    @Override
+    Set<CapabilityReferenceRecorder> getRequirements(ListIterator<PathElement> iterator) {
+        return target.getRequirements(iterator);
     }
 }
