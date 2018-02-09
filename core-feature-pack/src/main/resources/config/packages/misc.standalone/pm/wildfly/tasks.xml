@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+
+<tasks xmlns="urn:wildfly:wildfly-feature-pack-tasks:2.0">
+    <mkdirs>
+        <dir name="standalone/lib/ext"/>
+        <dir name="standalone/tmp/auth"/>
+    </mkdirs>
+</tasks>

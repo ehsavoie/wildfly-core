@@ -99,9 +99,9 @@ class EmbedHostControllerHandler extends CommandHandlerWithHelp {
     static EmbedHostControllerHandler create(final AtomicReference<EmbeddedProcessLaunch> hostControllerReference, final CommandContext ctx, final boolean modular) {
         EmbedHostControllerHandler result = new EmbedHostControllerHandler(hostControllerReference);
         final FilenameTabCompleter pathCompleter = FilenameTabCompleter.newCompleter(ctx);
-        if (!modular) {
+//        if (!modular) {
             result.jbossHome = new FileSystemPathArgument(result, pathCompleter, "--jboss-home");
-        }
+//        }
         result.stdOutHandling = new ArgumentWithValue(result, new SimpleTabCompleter(new String[]{ECHO, DISCARD_STDOUT}), "--std-out");
         result.domainConfig = new ArgumentWithValue(result, DOMAIN_CONFIG);
         result.hostConfig = new ArgumentWithValue(result, HOST_CONFIG);

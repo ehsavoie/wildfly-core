@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+
+<tasks xmlns="urn:wildfly:wildfly-feature-pack-tasks:2.0">
+    <mkdirs>
+        <dir name=".installation"/>
+    </mkdirs>
+    <file-permissions>
+        <permission value="755">
+            <filter pattern="*.sh" include="true"/>
+        </permission>
+        <permission value="700">
+            <filter pattern="*/tmp/auth" include="true"/>
+        </permission>
+        <permission value="600">
+            <filter pattern="*-users.properties" include="true"/>
+            <filter pattern="*/.installation" include="true"/>
+        </permission>
+    </file-permissions>
+    <copy-artifacts>
+        <copy-artifact artifact="org.jboss.modules:jboss-modules" to-location="jboss-modules.jar"/>
+    </copy-artifacts>
+</tasks>

@@ -2,7 +2,6 @@
 <feature-group-spec name="host-master" xmlns="urn:wildfly:pm-feature-group:1.0">
     <feature spec="host">
         <param name="host" value="master"/>
-        <param name="name" value="master"/>
 
         <feature-group name="host-default-security-realms"/>
         <feature-group name="host-audit"/>

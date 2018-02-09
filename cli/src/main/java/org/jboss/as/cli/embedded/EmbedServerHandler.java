@@ -81,9 +81,9 @@ class EmbedServerHandler extends CommandHandlerWithHelp {
     static EmbedServerHandler create(final AtomicReference<EmbeddedProcessLaunch> serverReference, CommandContext ctx, boolean modular) {
         EmbedServerHandler result = new EmbedServerHandler(serverReference);
         final FilenameTabCompleter pathCompleter = FilenameTabCompleter.newCompleter(ctx);
-        if (!modular) {
+//        if (!modular) {
             result.jbossHome = new FileSystemPathArgument(result, pathCompleter, "--jboss-home");
-        }
+//        }
         result.stdOutHandling = new ArgumentWithValue(result, new SimpleTabCompleter(new String[]{ECHO, DISCARD_STDOUT}), "--std-out");
         result.serverConfig = new ArgumentWithValue(result, "--server-config");
         result.dashC = new ArgumentWithValue(result, "-c");
