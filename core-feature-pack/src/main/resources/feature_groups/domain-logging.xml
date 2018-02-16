@@ -9,7 +9,6 @@
       <feature spec="profile.subsystem.logging.periodic-rotating-file-handler">
         <param name="periodic-rotating-file-handler" value="FILE"/>
         <param name="named-formatter" value="PATTERN"/>
-        <param name="formatter" value="undefined"/>
         <param name="file" value="{relative-to=jboss.server.log.dir,path=server.log}"/>
         <param name="suffix" value=".yyyy-MM-dd"/>
         <param name="append" value="true"/>
