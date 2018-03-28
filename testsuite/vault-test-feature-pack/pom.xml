@@ -93,45 +93,37 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <executions></executions>
-            </plugin>
-            <plugin>
-                <groupId>org.wildfly.build</groupId>
-                <artifactId>wildfly-feature-pack-build-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>feature-pack-build</id>
+                        <id>copy-resources</id>
+                        <phase>process-resources</phase>
                         <goals>
-                            <goal>build</goal>
+                            <goal>copy-resources</goal>
                         </goals>
-                        <phase>compile</phase>
                         <configuration>
-                            <config-file>feature-pack-build.xml</config-file>
+                            <outputDirectory>${basedir}/target/resources</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/src/main/resources</directory>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
+                <groupId>org.jboss.pm</groupId>
+                <artifactId>wildfly-feature-pack-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>assemble</id>
-                        <phase>package</phase>
+                        <id>feature-pack-build</id>
                         <goals>
-                            <goal>single</goal>
+                            <goal>wf-build</goal>
                         </goals>
+                        <phase>compile</phase>
                         <configuration>
-                            <descriptors>
-                                <descriptor>assembly.xml</descriptor>
-                            </descriptors>
-                            <recompressZippedFiles>true</recompressZippedFiles>
-                            <finalName>${server.output.dir.prefix}-vault-test-feature-pack-${project.version}</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <outputDirectory>${project.build.directory}</outputDirectory>
-                            <workDirectory>${project.build.directory}/assembly/work</workDirectory>
-                            <tarLongFileMode>gnu</tarLongFileMode>
+                            <resources-dir>target/resources/specs</resources-dir>
+                            <release-name>Vault</release-name>
                         </configuration>
                     </execution>
                 </executions>

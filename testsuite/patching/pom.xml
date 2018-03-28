@@ -61,18 +61,42 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.wildfly.build</groupId>
-                <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
+                <groupId>org.jboss.pm</groupId>
+                <artifactId>feature-pack-build-maven-plugin</artifactId>
                 <executions>
                     <execution>
+                        <phase>process-test-sources</phase>
                         <id>server-provisioning</id>
                         <goals>
-                            <goal>build</goal>
+                            <goal>provision</goal>
                         </goals>
-                        <phase>compile</phase>
                         <configuration>
-                            <config-file>server-provisioning.xml</config-file>
-                            <server-name>wildfly-core</server-name>
+                            <featurePack>
+                                <groupId>org.wildfly.core</groupId>
+                                <artifactId>wildfly-core-vault-test-feature-pack-new</artifactId>
+                                <version>${project.version}</version>
+                                <type>zip</type>
+                                <extension>zip</extension>
+                            </featurePack>
+                            <outputDirectory>${project.build.directory}/wildfly-core</outputDirectory>
+                            <configs>
+                                <config>
+                                    <model>standalone</model>
+                                    <name>standalone.xml</name>
+                                </config>
+                                <config>
+                                    <model>domain</model>
+                                    <name>default-domain</name>
+                                </config>
+                                <config>
+                                    <model>host</model>
+                                    <name>default-host</name>
+                                </config>
+                            </configs>
+                            <inheritPackages>true</inheritPackages>
+                            <excludedPackages>
+                                <param>product.conf</param>
+                            </excludedPackages>
                         </configuration>
                     </execution>
                 </executions>

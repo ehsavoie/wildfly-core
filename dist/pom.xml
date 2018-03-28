@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ JBoss, Home of Professional Open Source.
-  ~ Copyright 2014, Red Hat, Inc., and individual contributors
-  ~ as indicated by the @author tags. See the copyright.txt file in the
-  ~ distribution for a full listing of individual contributors.
-  ~
-  ~ This is free software; you can redistribute it and/or modify it
-  ~ under the terms of the GNU Lesser General Public License as
-  ~ published by the Free Software Foundation; either version 2.1 of
-  ~ the License, or (at your option) any later version.
-  ~
-  ~ This software is distributed in the hope that it will be useful,
-  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
-  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-  ~ Lesser General Public License for more details.
-  ~
-  ~ You should have received a copy of the GNU Lesser General Public
-  ~ License along with this software; if not, write to the Free
-  ~ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-  ~ 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-  -->
+~ JBoss, Home of Professional Open Source.
+~ Copyright 2014, Red Hat, Inc., and individual contributors
+~ as indicated by the @author tags. See the copyright.txt file in the
+~ distribution for a full listing of individual contributors.
+~
+~ This is free software; you can redistribute it and/or modify it
+~ under the terms of the GNU Lesser General Public License as
+~ published by the Free Software Foundation; either version 2.1 of
+~ the License, or (at your option) any later version.
+~
+~ This software is distributed in the hope that it will be useful,
+~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+~ Lesser General Public License for more details.
+~
+~ You should have received a copy of the GNU Lesser General Public
+~ License along with this software; if not, write to the Free
+~ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+~ 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+-->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -67,17 +67,42 @@
                 <finalName>${server.output.dir.prefix}-${wildfly.core.release.version}</finalName>
                 <plugins>
                     <plugin>
-                        <groupId>org.wildfly.build</groupId>
-                        <artifactId>wildfly-server-provisioning-maven-plugin</artifactId>
+                        <groupId>org.jboss.pm</groupId>
+                        <artifactId>feature-pack-build-maven-plugin</artifactId>
                         <executions>
                             <execution>
+                                <phase>process-sources</phase>
                                 <id>server-provisioning</id>
                                 <goals>
-                                    <goal>build</goal>
+                                    <goal>provision</goal>
                                 </goals>
-                                <phase>compile</phase>
                                 <configuration>
-                                    <config-file>server-provisioning.xml</config-file>
+                                    <featurePack>
+                                        <groupId>org.wildfly.core</groupId>
+                                        <artifactId>wildfly-core-feature-pack-new</artifactId>
+                                        <version>${project.version}</version>
+                                        <type>zip</type>
+                                        <extension>zip</extension>
+                                    </featurePack>
+                                    <outputDirectory>${basedir}/target/${project.build.finalName}</outputDirectory>
+                                    <configs>
+                                        <config>
+                                            <model>standalone</model>
+                                            <name>standalone.xml</name>
+                                        </config>
+                                        <config>
+                                            <model>host</model>
+                                            <name>default-host</name>
+                                        </config>
+                                        <config>
+                                            <model>domain</model>
+                                            <name>default-domain</name>
+                                        </config>
+                                    </configs>
+                                    <inheritPackages>true</inheritPackages>
+                                    <excludedPackages>
+                                        <param>product.conf</param>
+                                    </excludedPackages>
                                 </configuration>
                             </execution>
                         </executions>

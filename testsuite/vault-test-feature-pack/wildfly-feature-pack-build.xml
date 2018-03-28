@@ -19,9 +19,27 @@
   ~ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
   ~ 02110-1301 USA, or see the FSF site: http://www.fsf.org.
   -->
-<server-provisioning xmlns="urn:wildfly:server-provisioning:1.1" copy-module-artifacts="false">
-    <feature-packs>
-        <feature-pack groupId="org.wildfly.core" artifactId="wildfly-core-feature-pack" version="${project.version}" />
-        <feature-pack groupId="org.wildfly.core" artifactId="wildfly-core-vault-test-feature-pack" version="${project.version}" />
-    </feature-packs>
-</server-provisioning>
+
+<build xmlns="urn:wildfly:feature-pack-build:2.0">
+    <dependencies>
+        <dependency group-id="org.wildfly.core" artifact-id="wildfly-core-feature-pack">
+            <name>org.wildfly.core:wildfly-core-feature-pack-new</name>
+            <packages inherit="true">
+                <exclude name="product.conf"/>
+            </packages>
+            <default-configs inherit="false">
+                <include model="standalone" name="standalone.xml"/>
+                <include model="domain" name="default-domain"/>
+                <include model="host" name="default-host"/>
+            </default-configs>
+        </dependency>
+    </dependencies>
+    <default-packages>
+        <package name="org.picketbox.main"/>
+    </default-packages>
+    <config model="vault.test">
+        <packages>
+            <package name="org.picketbox.main"/>
+        </packages>
+    </config>
+</build>
