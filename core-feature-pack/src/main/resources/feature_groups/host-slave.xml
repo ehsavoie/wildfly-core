@@ -4,8 +4,8 @@
         <param name="host" value="slave"/>
         <param name="persist-name" value="false"/>
 
-        <feature spec="host_domain-controller">
-            <param name="domain-controller" value="{remote={security-realm=ManagementRealm}}"/>
+        <feature spec="host.domain-controller">
+            <param name="remote" value="{security-realm=ManagementRealm}"/>
         </feature>
 
         <feature-group name="host-security-realms"/>

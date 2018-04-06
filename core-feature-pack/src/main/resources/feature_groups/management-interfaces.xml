@@ -2,7 +2,9 @@
 <feature-group-spec name="management-interfaces" xmlns="urn:wildfly:pm-feature-group:1.0">
     <feature spec="core-service.management.management-interface.http-interface">
         <param name="socket-binding" value="management-http"/>
-        <param name="http-upgrade" value="{enabled=true}"/>
         <param name="security-realm" value="ManagementRealm"/>
+        <feature spec="core-service.management.management-interface.http-interface.http-upgrade">
+            <param name="enabled" value="true"/>
+        </feature>
     </feature>
 </feature-group-spec>

@@ -320,173 +320,252 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
 
     private ModelNode describeFeature(final Locale locale, final ImmutableManagementResourceRegistration registration,
             final CapabilityScope capabilityScope, boolean isProfile, ProcessType process) {
-        ModelNode result = new ModelNode();
-        if (registration.isFeature()
-                && !registration.isRuntimeOnly()
-                && !registration.isAlias()) {
-            PathAddress pa = registration.getPathAddress();
-            final ModelNode resourceDescriptionNode = registration.getModelDescription(PathAddress.EMPTY_ADDRESS).getModelDescription(locale);
-            ModelNode feature = result.get(FEATURE);
-            feature.get(ModelDescriptionConstants.NAME).set(registration.getFeature());
-            final DescriptionProvider addDescriptionProvider = registration.getOperationDescription(PathAddress.EMPTY_ADDRESS, ModelDescriptionConstants.ADD);
-            final ModelNode requestProperties;
-            final Map<String, String> featureParamMappings;
-            if (addDescriptionProvider != null) {
-                ModelNode annotation = feature.get(ANNOTATION);
-                annotation.get(ModelDescriptionConstants.NAME).set(ModelDescriptionConstants.ADD);
-                requestProperties = addDescriptionProvider.getModelDescription(locale).get(ModelDescriptionConstants.REQUEST_PROPERTIES);
-                featureParamMappings = addParams(feature, pa, requestProperties);
-                addOpParam(annotation, requestProperties, featureParamMappings);
-            } else {
-                requestProperties = new ModelNode().setEmptyList();
-                StringJoiner params = new StringJoiner(",");
-                params.setEmptyValue("");
-                if (resourceDescriptionNode.hasDefined(ATTRIBUTES)) {
-                    final ModelNode attributeNodes = resourceDescriptionNode.require(ATTRIBUTES);
-                    for (AttributeAccess attAccess : registration.getAttributes(PathAddress.EMPTY_ADDRESS).values()) {
-                        if (CONFIGURATION == attAccess.getStorageType() && attAccess.getAccessType() == AttributeAccess.AccessType.READ_WRITE) {
-                            AttributeDefinition attDef = attAccess.getAttributeDefinition();
-                            if (!attDef.isDeprecated()) {
-                                switch (attDef.getType()) {
-                                    case LIST:
-                                        if (!ObjectListAttributeDefinition.class.isAssignableFrom(attDef.getClass())) {
-                                            requestProperties.add(attDef.getName(), attributeNodes.get(attDef.getName()));
-                                        }
-                                        break;
-                                    case OBJECT:
-                                        break;
-                                    default:
-                                        requestProperties.add(attDef.getName(), attributeNodes.get(attDef.getName()));
-                                        break;
-                                }
-                            }
-                        }
-                    }
-                    featureParamMappings = addParams(feature, pa, requestProperties);
-                    if (requestProperties.isDefined() && !requestProperties.asList().isEmpty()) {
-                        ModelNode annotation = feature.get(ANNOTATION);
-                        annotation.get(ModelDescriptionConstants.NAME).set(ModelDescriptionConstants.WRITE_ATTRIBUTE_OPERATION);
-                        addOpParam(annotation, requestProperties, featureParamMappings);
-                    } else {
-                        feature.remove(ANNOTATION); //no operation
-                    }
-                } else {
-                    featureParamMappings = Collections.emptyMap();
-                }
-            }
-            Set<String> capabilities = new HashSet<>();
-            for (RuntimeCapability cap : registration.getCapabilities()) {
-                String capabilityName = cap.getName();
-                if (cap.isDynamicallyNamed()) {
-                    PathAddress aliasAddress = createAliasPathAddress(registration, pa);
-                    capabilityName = cap.getDynamicName(aliasAddress);
-                }
-                if (isProfile) {
-                    capabilityName = "$profile." + capabilityName;
-                }
-                capabilities.add(capabilityName);
-                feature.get("provides").add(capabilityName);
-            }
-            complexAttributeChildren(feature, registration);
-            addReferences(feature, registration);
-            addRequiredCapabilities(feature, registration, requestProperties, capabilityScope, isProfile, capabilities, featureParamMappings);
+        if (!registration.isFeature() || registration.isRuntimeOnly() || registration.isAlias()) {
+            return new ModelNode();
         }
-        return result;
-    }
-
-    private void complexAttributeChildren(final ModelNode parentFeature, final ImmutableManagementResourceRegistration registration) {
-        for (AttributeAccess attAccess : registration.getAttributes(PathAddress.EMPTY_ADDRESS).values()) {
-            if (CONFIGURATION == attAccess.getStorageType() && attAccess.getAccessType() == AttributeAccess.AccessType.READ_WRITE) {
-                AttributeDefinition attDef = attAccess.getAttributeDefinition();
-                if (!attDef.isDeprecated()) {
+        final ModelNode result = new ModelNode();
+        final PathAddress pa = registration.getPathAddress();
+        final ModelNode resourceDescriptionNode = registration.getModelDescription(PathAddress.EMPTY_ADDRESS)
+                .getModelDescription(locale);
+        final ModelNode feature = result.get(FEATURE);
+        feature.get(ModelDescriptionConstants.NAME).set(registration.getFeature());
+        final DescriptionProvider addDescriptionProvider = registration.getOperationDescription(PathAddress.EMPTY_ADDRESS, ModelDescriptionConstants.ADD);
+        final ModelNode requestProperties;
+        final Map<String, String> featureParamMappings;
+        if (addDescriptionProvider != null) {
+            ModelNode annotation = feature.get(ANNOTATION);
+            annotation.get(ModelDescriptionConstants.NAME).set(ModelDescriptionConstants.ADD);
+            requestProperties = addDescriptionProvider.getModelDescription(locale)
+                    .get(ModelDescriptionConstants.REQUEST_PROPERTIES);
+            featureParamMappings = addParams(feature, pa, requestProperties);
+            addOpParam(annotation, requestProperties, featureParamMappings);
+        } else {
+            requestProperties = new ModelNode().setEmptyList();
+            StringJoiner params = new StringJoiner(",");
+            params.setEmptyValue("");
+            if (resourceDescriptionNode.hasDefined(ATTRIBUTES)) {
+                final ModelNode attributeNodes = resourceDescriptionNode.require(ATTRIBUTES);
+                for (AttributeAccess attAccess : registration.getAttributes(PathAddress.EMPTY_ADDRESS).values()) {
+                    if (CONFIGURATION != attAccess.getStorageType() ||
+                            attAccess.getAccessType() != AttributeAccess.AccessType.READ_WRITE) {
+                        continue;
+                    }
+                    final AttributeDefinition attDef = attAccess.getAttributeDefinition();
+//                    if(attDef.isDeprecated()) {
+//                        continue;
+//                    }
                     switch (attDef.getType()) {
                         case LIST:
-                            if (ObjectListAttributeDefinition.class.isAssignableFrom(attDef.getClass())) {
-                                ObjectListAttributeDefinition objAttDef = (ObjectListAttributeDefinition) attDef;
-                                //we need a non resource feature
-                                ModelNode attFeature = new ModelNode();
-                                String name = parentFeature.require(NAME).asString() + "_" + objAttDef.getName();
-                                attFeature.get(NAME).set(name);
-                                ModelNode annotation = attFeature.get(ANNOTATION);
-                                annotation.get(ModelDescriptionConstants.NAME).set("list-add");
-                                if (parentFeature.hasDefined(ANNOTATION)) {
-                                    annotation.get(ADDRESS_PARAMETERS).set(parentFeature.require(ANNOTATION).require(ADDRESS_PARAMETERS));
-                                    if (parentFeature.require(ANNOTATION).hasDefined(ADDRESS_PARAMETERS_MAPPING)) {
-                                        annotation.get(ADDRESS_PARAMETERS).set(parentFeature.require(ANNOTATION).require(ADDRESS_PARAMETERS_MAPPING));
-                                    }
-                                } else {
-                                    addParams(attFeature, registration.getPathAddress(), new ModelNode().setEmptyList());
-                                }
-                                annotation.get(OPERATION_PARAMETERS).set(objAttDef.getValueType().getName());
-                                annotation.get(OPERATION_PARAMETERS_MAPPING).set(objAttDef.getName());
-                                ModelNode refs = attFeature.get(REFERENCES).setEmptyList();
-                                ModelNode ref = new ModelNode();
-                                ref.get(FEATURE).set(parentFeature.require(NAME));
-                                refs.add(ref);
-                                ModelNode params = attFeature.get(PARAMETERS).setEmptyList();
-                                if (parentFeature.hasDefined(PARAMETERS)) {
-                                    for (ModelNode param : parentFeature.require(PARAMETERS).asList()) {
-                                        if (param.hasDefined(FEATURE_ID) && param.get(FEATURE_ID).asBoolean()) {
-                                            params.add(param);
-                                        }
-                                    }
-                                }
-                                ModelNode param = new ModelNode();
-                                param.get(ModelDescriptionConstants.NAME).set(objAttDef.getValueType().getName());
-                                if (objAttDef.getDefaultValue() != null && objAttDef.getDefaultValue().isDefined()) {
-                                    param.get(ModelDescriptionConstants.DEFAULT).set(objAttDef.getDefaultValue());
-                                }
-                                param.get(FEATURE_ID).set(true);
-                                params.add(param);
-                                parentFeature.get(CHILDREN).get(name).set(attFeature);
+                            if (!ObjectListAttributeDefinition.class.isAssignableFrom(attDef.getClass())) {
+                                requestProperties.add(attDef.getName(), attributeNodes.get(attDef.getName()));
                             }
                             break;
                         case OBJECT:
-                            if (ObjectTypeAttributeDefinition.class.isAssignableFrom(attDef.getClass())) {
-                                ObjectTypeAttributeDefinition objAttDef = (ObjectTypeAttributeDefinition) attDef;
-                                //we need a non resource feature
-                                ModelNode attFeature = new ModelNode();
-                                String name = parentFeature.require(NAME).asString() + "_" + objAttDef.getName();
-                                attFeature.get(NAME).set(name);
-                                ModelNode annotation = attFeature.get(ANNOTATION);
-                                annotation.get(ModelDescriptionConstants.NAME).set(WRITE_ATTRIBUTE_OPERATION);
-                                if (parentFeature.hasDefined(ANNOTATION)) {
-                                    annotation.get(ADDRESS_PARAMETERS).set(parentFeature.require(ANNOTATION).require(ADDRESS_PARAMETERS));
-                                    if (parentFeature.require(ANNOTATION).hasDefined(ADDRESS_PARAMETERS_MAPPING)) {
-                                        annotation.get(ADDRESS_PARAMETERS).set(parentFeature.require(ANNOTATION).require(ADDRESS_PARAMETERS_MAPPING));
-                                    }
-                                } else {
-                                    addParams(attFeature, registration.getPathAddress(), new ModelNode().setEmptyList());
-                                }
-                                annotation.get(OPERATION_PARAMETERS).set(objAttDef.getName());
-                                annotation.get(OPERATION_PARAMETERS_MAPPING).set(objAttDef.getName());
-                                ModelNode refs = attFeature.get(REFERENCES).setEmptyList();
-                                ModelNode ref = new ModelNode();
-                                ref.get(FEATURE).set(parentFeature.require(NAME));
-                                refs.add(ref);
-                                ModelNode params = attFeature.get(PARAMETERS).setEmptyList();
-                                if (parentFeature.hasDefined(PARAMETERS)) {
-                                    for (ModelNode param : parentFeature.require(PARAMETERS).asList()) {
-                                        if (param.hasDefined(FEATURE_ID) && param.get(FEATURE_ID).asBoolean()) {
-                                            params.add(param);
-                                        }
-                                    }
-                                }
-                                ModelNode param = new ModelNode();
-                                param.get(ModelDescriptionConstants.NAME).set(objAttDef.getName());
-                                if (objAttDef.getDefaultValue() != null && objAttDef.getDefaultValue().isDefined()) {
-                                    param.get(ModelDescriptionConstants.DEFAULT).set(objAttDef.getDefaultValue());
-                                }
-                                param.get(FEATURE_ID).set(true);
-                                params.add(param);
-                                parentFeature.get(CHILDREN).get(name).set(attFeature);
-                            }
                             break;
                         default:
+                            requestProperties.add(attDef.getName(), attributeNodes.get(attDef.getName()));
+                            break;
                     }
+                }
+                featureParamMappings = addParams(feature, pa, requestProperties);
+                if (requestProperties.isDefined() && !requestProperties.asList().isEmpty()) {
+                    ModelNode annotation = feature.get(ANNOTATION);
+                    annotation.get(ModelDescriptionConstants.NAME).set(ModelDescriptionConstants.WRITE_ATTRIBUTE_OPERATION);
+                    addOpParam(annotation, requestProperties, featureParamMappings);
+                } else {
+                    feature.remove(ANNOTATION); // no operation
+                }
+            } else {
+                featureParamMappings = Collections.emptyMap();
+            }
+        }
+        Set<String> capabilities = new HashSet<>();
+        for (RuntimeCapability cap : registration.getCapabilities()) {
+            String capabilityName = cap.getName();
+            if (cap.isDynamicallyNamed()) {
+                PathAddress aliasAddress = createAliasPathAddress(registration, pa);
+                capabilityName = cap.getDynamicName(aliasAddress);
+            }
+            if (isProfile) {
+                capabilityName = "$profile." + capabilityName;
+            }
+            capabilities.add(capabilityName);
+            feature.get("provides").add(capabilityName);
+        }
+        processComplexAttributes(feature, registration);
+        addReferences(feature, registration);
+        addRequiredCapabilities(feature, registration, requestProperties, capabilityScope, isProfile, capabilities,
+                featureParamMappings);
+        return result;
+    }
+
+    private void processComplexAttributes(final ModelNode parentFeature, final ImmutableManagementResourceRegistration registration) {
+        for (AttributeAccess attAccess : registration.getAttributes(PathAddress.EMPTY_ADDRESS).values()) {
+            if(attAccess.getStorageType() != CONFIGURATION || attAccess.getAccessType() != AttributeAccess.AccessType.READ_WRITE) {
+                continue;
+            }
+            final AttributeDefinition attDef = attAccess.getAttributeDefinition();
+            if(attDef.isDeprecated()) {
+                continue;
+            }
+            switch (attDef.getType()) {
+                case LIST:
+                    if (ObjectListAttributeDefinition.class.isAssignableFrom(attDef.getClass())) {
+                        processListAttribute(parentFeature, registration, (ObjectListAttributeDefinition) attDef);
+                    }
+                    break;
+                case OBJECT:
+                    if (ObjectTypeAttributeDefinition.class.isAssignableFrom(attDef.getClass())) {
+                        ObjectTypeAttributeDefinition objAttDef = (ObjectTypeAttributeDefinition) attDef;
+                        processObjectAttribute(parentFeature, registration, objAttDef);
+                    }
+                    break;
+                default:
+            }
+        }
+    }
+
+    private void processObjectAttribute(final ModelNode parentFeature, final ImmutableManagementResourceRegistration registration, ObjectTypeAttributeDefinition objAttDef) {
+        // we need a non resource feature
+        final ModelNode attFeature = new ModelNode();
+        final String specName = parentFeature.require(NAME).asString() + "." + objAttDef.getName();
+        attFeature.get(NAME).set(specName);
+        final ModelNode annotation = attFeature.get(ANNOTATION);
+        annotation.get(ModelDescriptionConstants.NAME).set(WRITE_ATTRIBUTE_OPERATION);
+        annotation.get("complex-attribute").set(objAttDef.getName());
+        if (parentFeature.hasDefined(ANNOTATION)) {
+            annotation.get(ADDRESS_PARAMETERS)
+                    .set(parentFeature.require(ANNOTATION).require(ADDRESS_PARAMETERS));
+            if (parentFeature.require(ANNOTATION).hasDefined(ADDRESS_PARAMETERS_MAPPING)) {
+                annotation.get(ADDRESS_PARAMETERS)
+                        .set(parentFeature.require(ANNOTATION).require(ADDRESS_PARAMETERS_MAPPING));
+            }
+        } else {
+            addParams(attFeature, registration.getPathAddress(), new ModelNode().setEmptyList());
+        }
+
+        ModelNode refs = attFeature.get(REFERENCES).setEmptyList();
+        ModelNode ref = new ModelNode();
+        ref.get(FEATURE).set(parentFeature.require(NAME));
+        refs.add(ref);
+
+        ModelNode params = attFeature.get(PARAMETERS).setEmptyList();
+        Set<String> idParams = new HashSet<>();
+        if (parentFeature.hasDefined(PARAMETERS)) {
+            for (ModelNode param : parentFeature.require(PARAMETERS).asList()) {
+                if (param.hasDefined(FEATURE_ID) && param.get(FEATURE_ID).asBoolean()) {
+                    idParams.add(param.get(NAME).asString());
+                    params.add(param);
                 }
             }
         }
+
+        final AttributeDefinition[] attrs = objAttDef.getValueTypes();
+        Map<String, String> opParamMapping = Collections.emptyMap();
+        final ModelNode requestProps = new ModelNode();
+        for(AttributeDefinition attr : attrs) {
+            final ModelNode param = new ModelNode();
+            String paramName = attr.getName();
+            requestProps.add(new Property(paramName, new ModelNode()));
+            if(idParams.contains(paramName)) {
+                paramName += "-feature";
+                if(opParamMapping.isEmpty()) {
+                    opParamMapping = Collections.singletonMap(attr.getName(), paramName);
+                } else {
+                    if(opParamMapping.size() == 1) {
+                        opParamMapping = new HashMap<>(opParamMapping);
+                    }
+                    opParamMapping.put(attr.getName(), paramName);
+                }
+            }
+            param.get(ModelDescriptionConstants.NAME).set(paramName);
+            if(!attr.isRequired()) {
+                param.get(NILLABLE).set(true);
+            }
+            if (objAttDef.getDefaultValue() != null && objAttDef.getDefaultValue().isDefined()) {
+                param.get(ModelDescriptionConstants.DEFAULT).set(objAttDef.getDefaultValue());
+            }
+            if(attr.getType() == ModelType.LIST) {
+                param.get(TYPE).set("List<String>");
+            }
+            params.add(param);
+        }
+        addOpParam(annotation, requestProps, opParamMapping);
+
+        parentFeature.get(CHILDREN).get(specName).set(attFeature);
+    }
+
+    private void processListAttribute(final ModelNode parentFeature, final ImmutableManagementResourceRegistration registration, ObjectListAttributeDefinition objAttDef) {
+        System.out.println("List attr " + registration.getPathAddress().toCLIStyleString() + " " + objAttDef.getName());
+        final ModelNode parentSpecName = parentFeature.require(NAME);
+        ModelNode attFeature = new ModelNode();
+        final String specName = parentSpecName.asString() + "." + objAttDef.getName();
+        attFeature.get(NAME).set(specName);
+        ModelNode annotation = attFeature.get(ANNOTATION);
+        annotation.get(ModelDescriptionConstants.NAME).set("list-add");
+        annotation.get("complex-attribute").set(objAttDef.getName());
+        if (parentFeature.hasDefined(ANNOTATION)) {
+            annotation.get(ADDRESS_PARAMETERS)
+                    .set(parentFeature.require(ANNOTATION).require(ADDRESS_PARAMETERS));
+            if (parentFeature.require(ANNOTATION).hasDefined(ADDRESS_PARAMETERS_MAPPING)) {
+                annotation.get(ADDRESS_PARAMETERS)
+                        .set(parentFeature.require(ANNOTATION).require(ADDRESS_PARAMETERS_MAPPING));
+            }
+        } else {
+            addParams(attFeature, registration.getPathAddress(), new ModelNode().setEmptyList());
+        }
+
+        ModelNode refs = attFeature.get(REFERENCES).setEmptyList();
+        ModelNode ref = new ModelNode();
+        ref.get(FEATURE).set(parentSpecName);
+        refs.add(ref);
+
+        ModelNode params = attFeature.get(PARAMETERS).setEmptyList();
+        Set<String> idParams = new HashSet<>();
+        if (parentFeature.hasDefined(PARAMETERS)) {
+            for (ModelNode param : parentFeature.require(PARAMETERS).asList()) {
+                if (param.hasDefined(FEATURE_ID) && param.get(FEATURE_ID).asBoolean()) {
+                    final ModelNode parentParam = new ModelNode();
+                    parentParam.get(NAME).set(param.get(NAME).asString());
+                    params.add(parentParam);
+                }
+            }
+        }
+
+        final ObjectTypeAttributeDefinition itemType = objAttDef.getValueType();
+        final AttributeDefinition[] attrs = itemType.getValueTypes();
+        Map<String, String> opParamMapping = Collections.emptyMap();
+        final ModelNode requestProps = new ModelNode();
+        for(AttributeDefinition attr : attrs) {
+            final ModelNode param = new ModelNode();
+            String paramName = attr.getName();
+            requestProps.add(new Property(paramName, new ModelNode()));
+            if(idParams.contains(paramName)) {
+                paramName += "-feature";
+                if(opParamMapping.isEmpty()) {
+                    opParamMapping = Collections.singletonMap(attr.getName(), paramName);
+                } else {
+                    if(opParamMapping.size() == 1) {
+                        opParamMapping = new HashMap<>(opParamMapping);
+                    }
+                    opParamMapping.put(attr.getName(), paramName);
+                }
+            }
+            param.get(ModelDescriptionConstants.NAME).set(paramName);
+            if(!attr.isRequired()) {
+                param.get(NILLABLE).set(true);
+            }
+            if (objAttDef.getDefaultValue() != null && objAttDef.getDefaultValue().isDefined()) {
+                param.get(ModelDescriptionConstants.DEFAULT).set(objAttDef.getDefaultValue());
+            }
+            if(attr.getType() == ModelType.LIST) {
+                param.get(TYPE).set("List<String>");
+            }
+            params.add(param);
+        }
+        addOpParam(annotation, requestProps, opParamMapping);
+
+        parentFeature.get(CHILDREN).get(specName).set(attFeature);
     }
 
     private Map<String, String> addParams(ModelNode feature, PathAddress address, ModelNode requestProperties) {
@@ -509,6 +588,10 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
         }
         Map<String, String> featureParamMappings = new HashMap<>();
         for (Property att : requestProperties.asPropertyList()) {
+            final ModelNode attDescription = att.getValue();
+//            if(isDeprecated(attDescription)) {
+//                continue;
+//            }
             ModelNode param = new ModelNode();
             String paramName;
             if (paramNames.contains(att.getName()) || ((PROFILE.equals(att.getName()) || HOST.equals(att.getName())) && isSubsystem(address))) {
@@ -519,7 +602,6 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
             }
             param.get(ModelDescriptionConstants.NAME).set(paramName);
             paramNames.add(paramName);
-            ModelNode attDescription = att.getValue();
             if (attDescription.hasDefined(NILLABLE) && attDescription.get(NILLABLE).asBoolean()) {
                 param.get(NILLABLE).set(true);
             }
@@ -548,6 +630,10 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
         final ModelNode annotationNode = feature.get(ANNOTATION);
         annotationNode.get(ADDRESS_PARAMETERS).set(addressParams.toString());
         return featureParamMappings;
+    }
+
+    private boolean isDeprecated(final ModelNode attDescription) {
+        return attDescription.hasDefined(ModelDescriptionConstants.DEPRECATED);
     }
 
     private void addReferences(ModelNode feature, ImmutableManagementResourceRegistration registration) {
@@ -593,26 +679,30 @@ public class ReadFeatureHandler extends GlobalOperationHandlers.AbstractMultiTar
     }
 
     private void addOpParam(ModelNode annotation, ModelNode requestProperties, Map<String, String> featureParamMappings) {
-        if (requestProperties.isDefined()) {
-            List<Property> request = requestProperties.asPropertyList();
-            StringJoiner params = new StringJoiner(",");
-            StringJoiner paramMappings = new StringJoiner(",");
-            boolean keepMapping = false;
-            for (Property att : request) {
-                String realName = att.getName();
-                if(featureParamMappings.containsKey(realName)) {
-                    keepMapping = true;
-                    params.add(featureParamMappings.get(realName));
-                } else {
-                    params.add(realName);
-                }
-                paramMappings.add(realName);
-            }
-            if(keepMapping) {
-                 annotation.get(OPERATION_PARAMETERS_MAPPING).set(paramMappings.toString());
-            }
-            annotation.get(OPERATION_PARAMETERS).set(params.toString());
+        if (!requestProperties.isDefined()) {
+            return;
         }
+        List<Property> request = requestProperties.asPropertyList();
+        StringJoiner params = new StringJoiner(",");
+        StringJoiner paramMappings = new StringJoiner(",");
+        boolean keepMapping = false;
+        for (Property att : request) {
+//            if(isDeprecated(att.getValue())) {
+//                continue;
+//            }
+            String realName = att.getName();
+            if (featureParamMappings.containsKey(realName)) {
+                keepMapping = true;
+                params.add(featureParamMappings.get(realName));
+            } else {
+                params.add(realName);
+            }
+            paramMappings.add(realName);
+        }
+        if (keepMapping) {
+            annotation.get(OPERATION_PARAMETERS_MAPPING).set(paramMappings.toString());
+        }
+        annotation.get(OPERATION_PARAMETERS).set(params.toString());
     }
 
     private void addRequiredCapabilities(ModelNode feature,
