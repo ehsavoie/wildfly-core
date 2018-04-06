@@ -33,12 +33,16 @@
         <feature spec="subsystem.elytron.simple-permission-mapper">
             <param name="simple-permission-mapper" value="default-permission-mapper"/>
             <param name="mapping-mode" value="first"/>
-            <feature spec="subsystem.elytron.simple-permission-mapper_permission-mappings">
-                <param name="permission-mapping" value="{principals=[anonymous]}"/>
+            <param name="permission-mappings" value="[{principals=[anonymous]},{match-all=true,permissions=[class-name=org.wildfly.security.auth.permission.LoginPermission]}]"/>
+            <!--
+            <feature spec="subsystem.elytron.simple-permission-mapper.permission-mappings">
+                <param name="principals" value="[anonymous]"/>
             </feature>
-            <feature spec="subsystem.elytron.simple-permission-mapper_permission-mappings">
-                <param name="permission-mapping" value="{match-all=true,permissions=[class-name=org.wildfly.security.auth.permission.LoginPermission]}"/>
+            <feature spec="subsystem.elytron.simple-permission-mapper.permission-mappings">
+                <param name="match-all" value="true"/>
+                <param name="permissions" value="[class-name=org.wildfly.security.auth.permission.LoginPermission]"/>
             </feature>
+             -->
         </feature>
         <feature spec="subsystem.elytron.simple-role-decoder">
             <param name="simple-role-decoder" value="groups-to-roles"/>

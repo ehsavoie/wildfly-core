@@ -3,7 +3,9 @@
     <feature spec="host.core-service.management.management-interface.http-interface">
         <param name="interface" value="management"/>
         <param name="port" value="${jboss.management.http.port:9990}"/>
-        <param name="http-upgrade" value="{enabled=true}"/>
         <param name="security-realm" value="ManagementRealm"/>
+         <feature spec="host.core-service.management.management-interface.http-interface.http-upgrade">
+            <param name="enabled" value="true"/>
+        </feature>
     </feature>
 </feature-group-spec>

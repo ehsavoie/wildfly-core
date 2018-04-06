@@ -9,9 +9,12 @@
         <param name="disallowed-providers" value="[OracleUcrypto]"/>
         <feature-group name="elytron-app">
             <include feature-id="subsystem.elytron.security-domain:security-domain=ApplicationDomain">
-                <feature spec="subsystem.elytron.security-domain_realms">
-                    <param name="realm" value="{realm=local}"/>
+                <param name="realms" value="[{realm=ApplicationRealm,role-decoder=groups-to-roles},{realm=local}]"/>
+                <!--
+                <feature spec="subsystem.elytron.security-domain.realms">
+                    <param name="realm" value="local"/>
                 </feature>
+                -->
             </include>
         </feature-group>
         <feature-group name="elytron-management"/>
