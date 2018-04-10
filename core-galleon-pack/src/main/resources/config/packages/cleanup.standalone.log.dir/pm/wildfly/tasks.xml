@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+
+<tasks xmlns="urn:wildfly:wildfly-feature-pack-tasks:2.0">
+    <delete-paths>
+        <delete path="standalone/log" recursive="true"/>
+    </delete-paths>
+</tasks>

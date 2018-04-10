@@ -84,18 +84,8 @@
                                 <type>zip</type>
                                 <extension>zip</extension>
                             </featurePack>
-                            <outputDirectory>${project.build.directory}/wildfly-core-galleon</outputDirectory>
-                            <configs>
-                                <config>
-                                    <model>standalone</model>
-                                </config>
-                                <config>
-                                    <model>host</model>
-                                </config>
-                                <config>
-                                    <model>domain</model>
-                                </config>
-                            </configs>
+                            <outputDirectory>${project.build.directory}/${server.output.dir.prefix}-${project.version}</outputDirectory>
+                            <inheritConfigs>true</inheritConfigs>
                             <inheritPackages>true</inheritPackages>
                             <options>
                                 <jboss.maven.dist></jboss.maven.dist>

@@ -45,6 +45,11 @@
              ERROR [org.jboss.as.domain.http.api.undertow] (MSC service thread 1-4) WFLYDMHTTP0004: Unable to load error context for slot main, disabling error context.
               -->
             <package name="org.jboss.as.domain-http-error-context.main"/>
+
+            <!-- cleanup runtime dirs -->
+            <package name="cleanup.standalone.config.history.dir"/>
+            <package name="cleanup.standalone.log.dir"/>
+            <package name="cleanup.standalone.data.dir"/>
         </packages>
     </config>
 
@@ -61,6 +66,12 @@
             <package name="misc.domain"/>
             <package name="org.jboss.as.domain-management.main"/>
             <package name="org.jboss.as.domain-http-error-context.main"/>
+
+            <!-- cleanup runtime dirs -->
+            <package name="cleanup.domain.config.history.dir"/>
+            <package name="cleanup.domain.servers.dir"/>
+            <package name="cleanup.domain.log.dir"/>
+            <package name="cleanup.domain.data.dir"/>
         </packages>
     </config>
 

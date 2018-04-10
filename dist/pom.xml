@@ -111,21 +111,8 @@
                                         <extension>zip</extension>
                                     </featurePack>
                                     <outputDirectory>${basedir}/target/${project.build.finalName}-galleon</outputDirectory>
-                                    <configs>
-                                        <config>
-                                            <model>standalone</model>
-                                        </config>
-                                        <config>
-                                            <model>host</model>
-                                        </config>
-                                        <config>
-                                            <model>domain</model>
-                                        </config>
-                                    </configs>
+                                    <inheritConfigs>true</inheritConfigs>
                                     <inheritPackages>true</inheritPackages>
-                                    <excludedPackages>
-                                        <param>product.conf</param>
-                                    </excludedPackages>
                                 </configuration>
                             </execution>
                         </executions>
