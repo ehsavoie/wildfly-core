@@ -206,7 +206,7 @@ public interface Bootstrap {
                             configurationFile.resetBootFile(runningModeControl.isUseCurrentConfig(), runningModeControl.getAndClearNewBootFileName());
                         }
                         QName rootElement = new QName(Namespace.CURRENT.getUriString(), "server");
-                        StandaloneXml parser = new StandaloneXml(Module.getBootModuleLoader(), executorService, extensionRegistry);
+                        StandaloneXml parser = new StandaloneXml(moduleLoader, executorService, extensionRegistry);
                         BackupXmlConfigurationPersister persister = new BackupXmlConfigurationPersister(configurationFile, rootElement, parser, parser,
                                 runningModeControl.isReloaded(), serverEnvironment.getLaunchType() == ServerEnvironment.LaunchType.EMBEDDED);
                         for (Namespace namespace : Namespace.domainValues()) {

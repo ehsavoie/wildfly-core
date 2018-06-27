@@ -24,6 +24,7 @@ package org.jboss.as.controller;
 
 
 import org.jboss.as.controller.services.path.PathManager;
+import org.jboss.modules.ModuleLoader;
 
 /**
  * The context for registering a new extension.
@@ -195,4 +196,13 @@ public interface ExtensionContext {
      */
     @Deprecated
     boolean isRegisterTransformers();
+
+   /**
+     * Gets the process' {@link ModuleLoader}
+     *
+     * @return the module loader. Will not return {@code null}
+     *
+     * @throws IllegalStateException if the process is not a {@link ProcessType#isServer() server}
+     */
+    ModuleLoader getModuleLoader();
 }

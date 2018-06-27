@@ -63,6 +63,7 @@ import org.jboss.as.server.DeploymentProcessorTarget;
 import org.jboss.as.server.deployment.Phase;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
@@ -119,11 +120,9 @@ class ElytronDefinition extends SimpleResourceDefinition {
     static final PropertiesAttributeDefinition SECURITY_PROPERTIES = new PropertiesAttributeDefinition.Builder("security-properties", true)
             .build();
 
-    public static final ElytronDefinition INSTANCE = new ElytronDefinition();
-
-    private ElytronDefinition() {
+    public ElytronDefinition(ModuleLoader moduleLoader) {
         super(new Parameters(ElytronExtension.SUBSYSTEM_PATH, ElytronExtension.getResourceDescriptionResolver())
-                .setAddHandler(new ElytronAdd())
+                .setAddHandler(new ElytronAdd(moduleLoader))
                 .setRemoveHandler(new ElytronRemove())
                 .setCapabilities(ELYTRON_RUNTIME_CAPABILITY)
                 .addAccessConstraints(new SensitiveTargetAccessConstraintDefinition(new SensitivityClassification(ElytronExtension.SUBSYSTEM_NAME, ElytronDescriptionConstants.ELYTRON_SECURITY, true, true, true)),
@@ -310,9 +309,11 @@ class ElytronDefinition extends SimpleResourceDefinition {
     }
 
     private static class ElytronAdd extends AbstractBoottimeAddStepHandler implements ElytronOperationStepHandler {
+        private ModuleLoader moduleLoader;
 
-        private ElytronAdd() {
+        private ElytronAdd(ModuleLoader moduleLoader) {
             super(ELYTRON_RUNTIME_CAPABILITY, DEFAULT_AUTHENTICATION_CONTEXT, INITIAL_PROVIDERS, FINAL_PROVIDERS, DISALLOWED_PROVIDERS, SECURITY_PROPERTIES);
+            this.moduleLoader = moduleLoader;
         }
 
         @Override
@@ -356,7 +357,7 @@ class ElytronDefinition extends SimpleResourceDefinition {
                 context.addStep(new AbstractDeploymentChainStep() {
                     @Override
                     protected void execute(DeploymentProcessorTarget processorTarget) {
-                        processorTarget.addDeploymentProcessor(ElytronExtension.SUBSYSTEM_NAME, Phase.DEPENDENCIES, Phase.DEPENDENCIES_ELYTRON, new DependencyProcessor());
+                        processorTarget.addDeploymentProcessor(ElytronExtension.SUBSYSTEM_NAME, Phase.DEPENDENCIES, Phase.DEPENDENCIES_ELYTRON, new DependencyProcessor(moduleLoader));
                         processorTarget.addDeploymentProcessor(ElytronExtension.SUBSYSTEM_NAME, Phase.CONFIGURE_MODULE, Phase.CONFIGURE_AUTHENTICATION_CONTEXT, AUTHENITCATION_CONTEXT_PROCESSOR);
                         processorTarget.addDeploymentProcessor(ElytronExtension.SUBSYSTEM_NAME, Phase.FIRST_MODULE_USE, Phase.FIRST_MODULE_USE_AUTHENTICATION_CONTEXT, new AuthenticationContextAssociationProcessor());
                     }

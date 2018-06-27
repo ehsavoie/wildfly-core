@@ -148,7 +148,7 @@ public class EmbeddedProcessFactory {
     public static StandaloneServer createStandaloneServer(final Configuration configuration) {
         final ChainedContext context = new ChainedContext();
         context.add(new StandaloneSystemPropertyContext(configuration.getJBossHome()));
-        context.add(new LoggerContext(configuration.getModuleLoader()));
+        context.add(new LoggerContext(configuration.getModuleLoader(), configuration.isModular()));
         final ModuleLoader moduleLoader = configuration.getModuleLoader();
 
         setupVfsModule(moduleLoader);
@@ -239,7 +239,7 @@ public class EmbeddedProcessFactory {
     public static HostController createHostController(final Configuration configuration) {
         final ChainedContext context = new ChainedContext();
         context.add(new HostControllerSystemPropertyContext(configuration.getJBossHome()));
-        context.add(new LoggerContext(configuration.getModuleLoader()));
+        context.add(new LoggerContext(configuration.getModuleLoader(), configuration.isModular()));
         final ModuleLoader moduleLoader = configuration.getModuleLoader();
 
         setupVfsModule(moduleLoader);

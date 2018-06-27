@@ -49,7 +49,7 @@ import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.host.controller.parsing.DomainXml;
 import org.jboss.as.host.controller.parsing.HostXml;
 import org.jboss.dmr.ModelNode;
-import org.jboss.modules.Module;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.staxmapper.XMLElementReader;
 import org.jboss.staxmapper.XMLElementWriter;
 
@@ -66,7 +66,7 @@ public class ConfigurationPersisterFactory {
     // host.xml
     public static ExtensibleConfigurationPersister createHostXmlConfigurationPersister(final ConfigurationFile file, final HostControllerEnvironment environment,
                                                                                        final ExecutorService executorService, final ExtensionRegistry hostExtensionRegistry,
-                                                                                       final LocalHostControllerInfo localHostControllerInfo) {
+                                                                                       final LocalHostControllerInfo localHostControllerInfo, final ModuleLoader moduleLoader) {
         String defaultHostname = localHostControllerInfo.getLocalHostName();
         if (environment.getRunningModeControl().isReloaded()) {
             if (environment.getRunningModeControl().getReloadHostName() != null) {
@@ -74,7 +74,7 @@ public class ConfigurationPersisterFactory {
             }
         }
         HostXml hostXml = new HostXml(defaultHostname, environment.getRunningModeControl().getRunningMode(),
-                environment.isUseCachedDc(), Module.getBootModuleLoader(), executorService, hostExtensionRegistry);
+                environment.isUseCachedDc(), moduleLoader, executorService, hostExtensionRegistry);
         BackupXmlConfigurationPersister persister = new BackupXmlConfigurationPersister(file, new QName(Namespace.CURRENT.getUriString(), "host"), hostXml, hostXml, false);
         for (Namespace namespace : Namespace.domainValues()) {
             if (!namespace.equals(Namespace.CURRENT)) {
@@ -86,8 +86,8 @@ public class ConfigurationPersisterFactory {
     }
 
     // domain.xml
-    public static ExtensibleConfigurationPersister createDomainXmlConfigurationPersister(final ConfigurationFile file, ExecutorService executorService, ExtensionRegistry extensionRegistry, final HostControllerEnvironment environment) {
-        DomainXml domainXml = new DomainXml(Module.getBootModuleLoader(), executorService, extensionRegistry);
+    public static ExtensibleConfigurationPersister createDomainXmlConfigurationPersister(final ConfigurationFile file, ExecutorService executorService, ExtensionRegistry extensionRegistry, final HostControllerEnvironment environment, final ModuleLoader moduleLoader) {
+        DomainXml domainXml = new DomainXml(moduleLoader, executorService, extensionRegistry);
 
         boolean suppressLoad = false;
         ConfigurationFile.InteractionPolicy policy = file.getInteractionPolicy();
@@ -112,8 +112,8 @@ public class ConfigurationPersisterFactory {
     }
 
     // --backup
-    public static ExtensibleConfigurationPersister createRemoteBackupDomainXmlConfigurationPersister(final File configDir, ExecutorService executorService, ExtensionRegistry extensionRegistry) {
-        DomainXml domainXml = new DomainXml(Module.getBootModuleLoader(), executorService, extensionRegistry);
+    public static ExtensibleConfigurationPersister createRemoteBackupDomainXmlConfigurationPersister(final File configDir, ExecutorService executorService, ExtensionRegistry extensionRegistry, final ModuleLoader moduleLoader) {
+        DomainXml domainXml = new DomainXml(moduleLoader, executorService, extensionRegistry);
         File bootFile = new File(configDir, CACHED_DOMAIN_XML_BOOTFILE);
         File file = new File(configDir, CACHED_DOMAIN_XML);
         BackupRemoteDomainXmlPersister persister = new BackupRemoteDomainXmlPersister(file, bootFile, new QName(Namespace.CURRENT.getUriString(), "domain"), domainXml, domainXml);
@@ -127,13 +127,13 @@ public class ConfigurationPersisterFactory {
     }
 
     // --cached-dc, just use the same one as --backup, as we need to write changes as they occur.
-    public static ExtensibleConfigurationPersister createCachedRemoteDomainXmlConfigurationPersister(final File configDir, ExecutorService executorService, ExtensionRegistry extensionRegistry) {
-        return createRemoteBackupDomainXmlConfigurationPersister(configDir, executorService, extensionRegistry);
+    public static ExtensibleConfigurationPersister createCachedRemoteDomainXmlConfigurationPersister(final File configDir, ExecutorService executorService, ExtensionRegistry extensionRegistry, final ModuleLoader moduleLoader) {
+        return createRemoteBackupDomainXmlConfigurationPersister(configDir, executorService, extensionRegistry, moduleLoader);
     }
 
     // slave=true
-    public static ExtensibleConfigurationPersister createTransientDomainXmlConfigurationPersister(ExecutorService executorService, ExtensionRegistry extensionRegistry) {
-        DomainXml domainXml = new DomainXml(Module.getBootModuleLoader(), executorService, extensionRegistry);
+    public static ExtensibleConfigurationPersister createTransientDomainXmlConfigurationPersister(ExecutorService executorService, ExtensionRegistry extensionRegistry, final ModuleLoader moduleLoader) {
+        DomainXml domainXml = new DomainXml(moduleLoader, executorService, extensionRegistry);
         ExtensibleConfigurationPersister persister = new NullConfigurationPersister(domainXml);
         extensionRegistry.setWriterRegistry(persister);
         return persister;

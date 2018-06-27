@@ -143,7 +143,7 @@ public final class Main {
                 return null;
             } else {
                 try {
-                    final HostControllerBootstrap hc = new HostControllerBootstrap(hostControllerEnvironmentWrapper.getHostControllerEnvironment(), authCode);
+                    final HostControllerBootstrap hc = new HostControllerBootstrap(hostControllerEnvironmentWrapper.getHostControllerEnvironment(), authCode, Module.getBootModuleLoader());
                     hc.bootstrap();
                     return hc;
                 } catch(Throwable t) {

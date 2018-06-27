@@ -52,6 +52,7 @@ import org.jboss.as.server.FutureServiceContainer;
 import org.jboss.as.server.Services;
 import org.jboss.as.server.logging.ServerLogger;
 import org.jboss.as.version.ProductConfig;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
@@ -92,11 +93,12 @@ public class HostControllerService implements Service<AsyncFuture<ServiceContain
     private final ControlledProcessState processState;
     private final String authCode;
     private final CapabilityRegistry capabilityRegistry;
+    private final ModuleLoader moduleLoader;
     private volatile FutureServiceContainer futureContainer;
     private volatile long startTime;
 
     public HostControllerService(final HostControllerEnvironment environment, final HostRunningModeControl runningModeControl,
-                          final String authCode, final ControlledProcessState processState, FutureServiceContainer futureContainer) {
+                          final String authCode, final ControlledProcessState processState, FutureServiceContainer futureContainer, final ModuleLoader moduleLoader) {
         this.environment = environment;
         this.runningModeControl = runningModeControl;
         this.authCode = authCode;
@@ -104,11 +106,12 @@ public class HostControllerService implements Service<AsyncFuture<ServiceContain
         this.startTime = environment.getStartTime();
         this.futureContainer = futureContainer;
         this.capabilityRegistry = new CapabilityRegistry(false);
+        this.moduleLoader = moduleLoader;
     }
 
     public HostControllerService(final HostControllerEnvironment environment, final HostRunningModeControl runningModeControl,
-                                 final String authCode, final ControlledProcessState processState) {
-        this(environment, runningModeControl, authCode, processState, new FutureServiceContainer());
+                                 final String authCode, final ControlledProcessState processState, final ModuleLoader moduleLoader) {
+        this(environment, runningModeControl, authCode, processState, new FutureServiceContainer(), moduleLoader);
     }
 
     @Override
@@ -195,7 +198,7 @@ public class HostControllerService implements Service<AsyncFuture<ServiceContain
                 .install();
 
         DomainModelControllerService.addService(serviceTarget, environment, runningModeControl, processState,
-                bootstrapListener, hostPathManagerService, capabilityRegistry, threadGroup);
+                bootstrapListener, hostPathManagerService, capabilityRegistry, threadGroup, moduleLoader);
 
     }
 

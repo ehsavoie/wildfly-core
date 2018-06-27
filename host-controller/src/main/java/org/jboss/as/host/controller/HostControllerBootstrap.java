@@ -28,6 +28,7 @@ import org.jboss.as.controller.ControlledProcessState;
 import org.jboss.as.controller.ControlledProcessStateService;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.server.jmx.RunningStateJmx;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceTarget;
 
@@ -44,12 +45,14 @@ public class HostControllerBootstrap {
     private final ServiceContainer serviceContainer;
     private final HostControllerEnvironment environment;
     private final String authCode;
+    private final ModuleLoader moduleLoader;
 
-    public HostControllerBootstrap(final HostControllerEnvironment environment, final String authCode) {
+    public HostControllerBootstrap(final HostControllerEnvironment environment, final String authCode, final ModuleLoader moduleLoader) {
         this.environment = environment;
         this.authCode = authCode;
         this.shutdownHook = new ShutdownHook();
         this.serviceContainer = shutdownHook.register();
+        this.moduleLoader= moduleLoader;
     }
 
     /**
@@ -64,7 +67,7 @@ public class HostControllerBootstrap {
         ServiceTarget target = serviceContainer.subTarget();
         ControlledProcessStateService controlledProcessStateService = ControlledProcessStateService.addService(target, processState).getValue();
         RunningStateJmx.registerMBean(controlledProcessStateService, null, runningModeControl, false);
-        final HostControllerService hcs = new HostControllerService(environment, runningModeControl, authCode, processState);
+        final HostControllerService hcs = new HostControllerService(environment, runningModeControl, authCode, processState, moduleLoader);
         target.addService(HostControllerService.HC_SERVICE_NAME, hcs).install();
     }
 

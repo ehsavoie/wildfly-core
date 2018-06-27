@@ -267,7 +267,7 @@ public class EmbeddedHostControllerFactory {
                 final byte[] authBytes = new byte[ProcessController.AUTH_BYTES_LENGTH];
                 new Random(new SecureRandom().nextLong()).nextBytes(authBytes);
                 final String authCode = Base64.getEncoder().encodeToString(authBytes);
-                hostControllerBootstrap = new EmbeddedHostControllerBootstrap(futureContainer, environment, authCode);
+                hostControllerBootstrap = new EmbeddedHostControllerBootstrap(futureContainer, environment, authCode, moduleLoader);
                 hostControllerBootstrap.bootstrap();
                 serviceContainer = futureContainer.get();
                 executorService = Executors.newCachedThreadPool();

@@ -44,7 +44,7 @@ class LoggerContext implements Context {
     private static final String MODULE_ID_LOGGING = "org.jboss.logging";
 
     private final ModuleLoader moduleLoader;
-
+    private final boolean modular;
     private volatile ModuleLogger loggerToRestore;
 
     /**
@@ -52,8 +52,9 @@ class LoggerContext implements Context {
      *
      * @param moduleLoader the module loader to load the logging module
      */
-    LoggerContext(final ModuleLoader moduleLoader) {
+    LoggerContext(final ModuleLoader moduleLoader, boolean modular) {
         this.moduleLoader = moduleLoader;
+        this.modular = modular;
     }
 
     @Override
@@ -99,6 +100,13 @@ class LoggerContext implements Context {
         } finally {
             // Reset TCCL
             setTccl(tccl);
+        }
+        if (moduleLoader instanceof AutoCloseable && moduleLoader != Module.getBootModuleLoader()) {
+            try {
+                ((AutoCloseable) moduleLoader).close();
+            } catch (Exception ex) {
+                EmbeddedLogger.ROOT_LOGGER.error(ex.getMessage(), ex);
+            }
         }
     }
 

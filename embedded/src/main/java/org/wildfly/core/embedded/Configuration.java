@@ -27,8 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.jboss.modules.Module;
+import org.jboss.modules.LocalModuleLoader;
 import org.jboss.modules.ModuleLoader;
 import org.wildfly.core.embedded.logging.EmbeddedLogger;
 
@@ -91,6 +90,7 @@ public interface Configuration {
      */
     String[] getCommandArguments();
 
+    boolean isModular();
 
     /**
      * A builder for creating the {@linkplain Configuration configuration}
@@ -113,6 +113,7 @@ public interface Configuration {
         private LoggerHint loggerHint;
         private ModuleLoader moduleLoader;
         private String modulePath;
+        private boolean modular = true;
 
         /**
          * Creates a new builder for the configuration.
@@ -312,6 +313,11 @@ public interface Configuration {
             return addSystemPackages(systemPackages);
         }
 
+        public Builder setModular(boolean modular) {
+            this.modular = modular;
+            return this;
+        }
+
         /**
          * Creates a new immutable configuration.
          *
@@ -332,11 +338,12 @@ public interface Configuration {
                 } else {
                     modulePath = this.modulePath;
                 }
-                moduleLoader = setupModuleLoader(modulePath, systemPackages);
+                moduleLoader = setupModuleLoader(modular, modulePath, systemPackages);
                 MODULE_LOADER_CONFIGURED.set(true);
             } else {
                 moduleLoader = this.moduleLoader;
             }
+            boolean isModular = modular;
             return new Configuration() {
                 @Override
                 public Path getJBossHome() {
@@ -351,6 +358,11 @@ public interface Configuration {
                 @Override
                 public String[] getCommandArguments() {
                     return Arrays.copyOf(cmdArgs, cmdArgs.length);
+                }
+
+                @Override
+                public boolean isModular() {
+                    return isModular;
                 }
             };
         }
@@ -371,7 +383,7 @@ public interface Configuration {
             return index == -1 ? modulePath : modulePath.substring(0, index);
         }
 
-        private static ModuleLoader setupModuleLoader(final String modulePath, final String... systemPackages) {
+        private static ModuleLoader setupModuleLoader(final boolean modular, final String modulePath, final String... systemPackages) {
 
             assert modulePath != null : "modulePath not null";
 
@@ -402,7 +414,10 @@ public interface Configuration {
                 SecurityActions.setPropertyPrivileged(SYSPROP_KEY_SYSTEM_MODULES, packages.toString());
 
                 // Get the module loader
-                return Module.getBootModuleLoader();
+//                if(modular) {
+//                    return Module.getBootModuleLoader();
+//                }
+                return new LocalModuleLoader();
             } finally {
                 // Return to previous state for classpath prop
                 if (classPath != null) {

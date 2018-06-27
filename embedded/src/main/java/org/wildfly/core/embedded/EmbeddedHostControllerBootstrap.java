@@ -31,6 +31,7 @@ import org.jboss.as.host.controller.HostControllerService;
 import org.jboss.as.host.controller.HostRunningModeControl;
 import org.jboss.as.server.FutureServiceContainer;
 import org.jboss.as.server.jmx.RunningStateJmx;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceTarget;
 
@@ -45,14 +46,16 @@ public class EmbeddedHostControllerBootstrap {
     private final ServiceContainer serviceContainer;
     private final HostControllerEnvironment environment;
     private final String authCode;
+    private final ModuleLoader moduleLoader;
     private FutureServiceContainer futureContainer;
 
-    public EmbeddedHostControllerBootstrap(FutureServiceContainer futureContainer, final HostControllerEnvironment environment, final String authCode) {
+    public EmbeddedHostControllerBootstrap(FutureServiceContainer futureContainer, final HostControllerEnvironment environment, final String authCode, final ModuleLoader moduleLoader) {
         this.environment = environment;
         this.authCode = authCode;
         this.shutdownHook = new ShutdownHook();
         this.serviceContainer = shutdownHook.register();
         this.futureContainer = futureContainer;
+        this.moduleLoader = moduleLoader;
     }
 
     public FutureServiceContainer bootstrap() throws Exception {
@@ -64,7 +67,7 @@ public class EmbeddedHostControllerBootstrap {
 
             final ControlledProcessStateService controlledProcessStateService = ControlledProcessStateService.addService(target, processState).getValue();
             RunningStateJmx.registerMBean(controlledProcessStateService, null, runningModeControl, false);
-            final HostControllerService hcs = new HostControllerService(environment, runningModeControl, authCode, processState, futureContainer);
+            final HostControllerService hcs = new HostControllerService(environment, runningModeControl, authCode, processState, futureContainer, moduleLoader);
             target.addService(HostControllerService.HC_SERVICE_NAME, hcs).install();
             return futureContainer;
         } catch (RuntimeException | Error e) {

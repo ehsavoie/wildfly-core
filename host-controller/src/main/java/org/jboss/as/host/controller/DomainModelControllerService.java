@@ -181,6 +181,7 @@ import org.jboss.as.server.deployment.ContentCleanerService;
 import org.jboss.as.server.mgmt.UndertowHttpManagementService;
 import org.jboss.as.server.services.security.AbstractVaultReader;
 import org.jboss.dmr.ModelNode;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
@@ -249,6 +250,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
     };
 
     private final AtomicBoolean serverInventoryLock = new AtomicBoolean();
+    private final ModuleLoader moduleLoader;
     // @GuardedBy(serverInventoryLock), after the HC started reads just use the volatile value
     private volatile ServerInventory serverInventory;
 
@@ -263,7 +265,8 @@ public class DomainModelControllerService extends AbstractControllerService impl
                                                             final BootstrapListener bootstrapListener,
                                                             final PathManagerService pathManager,
                                                             final CapabilityRegistry capabilityRegistry,
-                                                            final ThreadGroup threadGroup) {
+                                                            final ThreadGroup threadGroup,
+                                                            final ModuleLoader moduleLoader) {
 
         final ConcurrentMap<String, ProxyController> hostProxies = new ConcurrentHashMap<String, ProxyController>();
         final Map<String, ProxyController> serverProxies = new ConcurrentHashMap<String, ProxyController>();
@@ -287,7 +290,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
         final DomainModelControllerService service = new DomainModelControllerService(environment, runningModeControl, processState,
                 hostControllerInfo, contentRepository, hostProxies, serverProxies, prepareStepHandler, vaultReader,
                 ignoredRegistry, bootstrapListener, pathManager, expressionResolver, new DomainDelegatingResourceDefinition(),
-                hostExtensionRegistry, extensionRegistry, auditLogger, authorizer, securityIdentitySupplier, capabilityRegistry, domainHostExcludeRegistry);
+                hostExtensionRegistry, extensionRegistry, auditLogger, authorizer, securityIdentitySupplier, capabilityRegistry, domainHostExcludeRegistry, moduleLoader);
 
         HostControllerEnvironmentService.addService(environment, serviceTarget);
 
@@ -322,7 +325,8 @@ public class DomainModelControllerService extends AbstractControllerService impl
                                          final DelegatingConfigurableAuthorizer authorizer,
                                          final ManagementSecurityIdentitySupplier securityIdentitySupplier,
                                          final CapabilityRegistry capabilityRegistry,
-                                         final DomainHostExcludeRegistry domainHostExcludeRegistry) {
+                                         final DomainHostExcludeRegistry domainHostExcludeRegistry,
+                                         final ModuleLoader moduleLoader) {
         super(environment.getProcessType(), runningModeControl, null, processState,
                 rootResourceDefinition, prepareStepHandler, new RuntimeExpressionResolver(vaultReader), auditLogger, authorizer, securityIdentitySupplier, capabilityRegistry);
         this.environment = environment;
@@ -346,6 +350,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
         this.rootResourceDefinition = rootResourceDefinition;
         this.capabilityRegistry = capabilityRegistry;
         this.domainHostExcludeRegistry = domainHostExcludeRegistry;
+        this.moduleLoader = moduleLoader;
     }
 
     private static ManagedAuditLogger createAuditLogger(HostControllerEnvironment environment) {
@@ -523,7 +528,7 @@ public class DomainModelControllerService extends AbstractControllerService impl
     @Override
     public void start(StartContext context) throws StartException {
         final ExecutorService executorService = getExecutorServiceInjector().getValue();
-        this.hostControllerConfigurationPersister = new HostControllerConfigurationPersister(environment, hostControllerInfo, executorService, hostExtensionRegistry, extensionRegistry);
+        this.hostControllerConfigurationPersister = new HostControllerConfigurationPersister(environment, hostControllerInfo, executorService, hostExtensionRegistry, extensionRegistry, moduleLoader);
         setConfigurationPersister(hostControllerConfigurationPersister);
         prepareStepHandler.setExecutorService(executorService);
         ThreadFactory pingerThreadFactory = doPrivileged(new PrivilegedAction<JBossThreadFactory>() {

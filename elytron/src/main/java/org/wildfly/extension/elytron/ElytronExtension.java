@@ -115,7 +115,7 @@ public class ElytronExtension implements Extension {
         // Elytron is expected to be used everywhere.
         subsystemRegistration.setHostCapable();
 
-        final ManagementResourceRegistration registration = subsystemRegistration.registerSubsystemModel(ElytronDefinition.INSTANCE);
+        final ManagementResourceRegistration registration = subsystemRegistration.registerSubsystemModel(new ElytronDefinition(context.getModuleLoader()));
         registration.registerOperationHandler(GenericSubsystemDescribeHandler.DEFINITION, GenericSubsystemDescribeHandler.INSTANCE);
 
         subsystemRegistration.registerXMLElementWriter(() -> new ElytronSubsystemParser4_0());

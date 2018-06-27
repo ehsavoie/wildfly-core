@@ -94,6 +94,8 @@ import org.jboss.as.controller.transform.ResourceTransformer;
 import org.jboss.as.controller.transform.TransformerRegistry;
 import org.jboss.as.controller.transform.TransformersSubRegistration;
 import org.jboss.dmr.ModelNode;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.staxmapper.XMLElementReader;
 import org.jboss.staxmapper.XMLElementWriter;
 import org.jboss.staxmapper.XMLMapper;
@@ -135,6 +137,7 @@ public class ExtensionRegistry {
     private final ConcurrentHashMap<String, SubsystemInformation> subsystemsInfo = new ConcurrentHashMap<String, SubsystemInformation>();
     private volatile TransformerRegistry transformerRegistry = TransformerRegistry.Factory.create();
     private final RuntimeHostControllerInfoAccessor hostControllerInfoAccessor;
+    private ModuleLoader moduleLoader = Module.getBootModuleLoader();
 
     /**
      * Constructor
@@ -184,6 +187,10 @@ public class ExtensionRegistry {
      */
     public void setPathManager(final PathManager pathManager) {
         this.pathManager = pathManager;
+    }
+
+    public void setModuleLoader(ModuleLoader moduleLoader) {
+        this.moduleLoader = moduleLoader;
     }
 
     public SubsystemInformation getSubsystemInfo(final String name) {
@@ -288,7 +295,7 @@ public class ExtensionRegistry {
         // Hack to restrict extra data to specified extension(s)
         boolean allowSupplement = legallySupplemented.contains(moduleName);
         ManagedAuditLogger al = allowSupplement ? auditLogger : null;
-        return new ExtensionContextImpl(moduleName, profileRegistration, deploymentsRegistration, pathManager, extensionRegistryType, al);
+        return new ExtensionContextImpl(moduleName, profileRegistration, deploymentsRegistration, pathManager, extensionRegistryType, al, moduleLoader);
     }
 
     public Set<ProfileParsingCompletionHandler> getProfileParsingCompletionHandlers() {
@@ -534,10 +541,11 @@ public class ExtensionRegistry {
         private final ManagementResourceRegistration profileRegistration;
         private final ManagementResourceRegistration deploymentsRegistration;
         private final ExtensionRegistryType extensionRegistryType;
+        private final ModuleLoader moduleLoader;
 
         private ExtensionContextImpl(String extensionName, ManagementResourceRegistration profileResourceRegistration,
                                      ManagementResourceRegistration deploymentsResourceRegistration, PathManager pathManager,
-                                     ExtensionRegistryType extensionRegistryType, ManagedAuditLogger auditLogger) {
+                                     ExtensionRegistryType extensionRegistryType, ManagedAuditLogger auditLogger, ModuleLoader moduleLoader) {
             assert pathManager != null || !processType.isServer() : "pathManager is null";
             this.pathManager = pathManager;
             this.extension = getExtensionInfo(extensionName);
@@ -545,6 +553,7 @@ public class ExtensionRegistry {
             this.auditLogger = auditLogger;
             this.allowSupplement = auditLogger != null;
             this.profileRegistration = profileResourceRegistration;
+            this.moduleLoader = moduleLoader;
 
             if (deploymentsResourceRegistration != null) {
                 PathAddress subdepAddress = PathAddress.pathAddress(PathElement.pathElement(ModelDescriptionConstants.SUBDEPLOYMENT));
@@ -637,6 +646,11 @@ public class ExtensionRegistry {
         @Deprecated
         public boolean isRegisterTransformers() {
             return registerTransformers;
+        }
+
+        @Override
+        public ModuleLoader getModuleLoader() {
+            return moduleLoader;
         }
 
         // ExtensionContextSupplement implementation

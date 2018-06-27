@@ -42,6 +42,8 @@ import org.jboss.as.controller.persistence.SubsystemMarshallingContext;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.dmr.ModelNode;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.staxmapper.XMLElementWriter;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
@@ -59,21 +61,28 @@ public class HostControllerConfigurationPersister implements ExtensibleConfigura
     private final ExecutorService executorService;
     private final ExtensionRegistry hostExtensionRegistry;
     private final ExtensionRegistry extensionRegistry;
+    private final ModuleLoader moduleLoader;
     private Boolean slave;
 
     public HostControllerConfigurationPersister(final HostControllerEnvironment environment, final LocalHostControllerInfo localHostControllerInfo,
                                                 final ExecutorService executorService, final ExtensionRegistry hostExtensionRegistry, final ExtensionRegistry extensionRegistry) {
+        this(environment, localHostControllerInfo, executorService, hostExtensionRegistry, extensionRegistry, Module.getBootModuleLoader());
+    }
+    public HostControllerConfigurationPersister(final HostControllerEnvironment environment, final LocalHostControllerInfo localHostControllerInfo,
+                                                final ExecutorService executorService, final ExtensionRegistry hostExtensionRegistry, final ExtensionRegistry extensionRegistry,
+                                                final ModuleLoader moduleLoader) {
         this.environment = environment;
         this.hostControllerInfo = localHostControllerInfo;
         this.executorService = executorService;
         this.hostExtensionRegistry = hostExtensionRegistry;
         this.extensionRegistry = extensionRegistry;
+        this.moduleLoader = moduleLoader;
         final ConfigurationFile configurationFile = environment.getHostConfigurationFile();
         final HostRunningModeControl runningModeControl = environment.getRunningModeControl();
         if (runningModeControl.isReloaded()) {
             configurationFile.resetBootFile(runningModeControl.isUseCurrentConfig(), runningModeControl.getAndClearNewBootFileName());
         }
-        this.hostPersister = ConfigurationPersisterFactory.createHostXmlConfigurationPersister(configurationFile, environment, executorService, hostExtensionRegistry, hostControllerInfo);
+        this.hostPersister = ConfigurationPersisterFactory.createHostXmlConfigurationPersister(configurationFile, environment, executorService, hostExtensionRegistry, hostControllerInfo, moduleLoader);
     }
 
     public void initializeDomainConfigurationPersister(boolean slave) {
@@ -87,9 +96,9 @@ public class HostControllerConfigurationPersister implements ExtensibleConfigura
             // in either case of --backup and/or --cached-dc, we persist with the same persister
             if (environment.isBackupDomainFiles() || environment.isUseCachedDc()) {
                 domainConfigurationFile = getBackupDomainConfigurationFile();
-                domainPersister = ConfigurationPersisterFactory.createRemoteBackupDomainXmlConfigurationPersister(configDir, executorService, extensionRegistry);
+                domainPersister = ConfigurationPersisterFactory.createRemoteBackupDomainXmlConfigurationPersister(configDir, executorService, extensionRegistry, moduleLoader);
             } else {
-                domainPersister = ConfigurationPersisterFactory.createTransientDomainXmlConfigurationPersister(executorService, extensionRegistry);
+                domainPersister = ConfigurationPersisterFactory.createTransientDomainXmlConfigurationPersister(executorService, extensionRegistry, moduleLoader);
             }
         } else {
             domainConfigurationFile = getStandardDomainConfigurationFile();
@@ -114,7 +123,7 @@ public class HostControllerConfigurationPersister implements ExtensibleConfigura
                         runningModeControl.isUseCurrentDomainConfig(),
                         runningModeControl.getAndClearNewDomainBootFileName());
             }
-            domainPersister = ConfigurationPersisterFactory.createDomainXmlConfigurationPersister(domainConfigurationFile, executorService, extensionRegistry, environment);
+            domainPersister = ConfigurationPersisterFactory.createDomainXmlConfigurationPersister(domainConfigurationFile, executorService, extensionRegistry, environment, moduleLoader);
         }
         // Store this back to environment so mgmt api that exposes it can still work
         environment.setDomainConfigurationFile(domainConfigurationFile);
