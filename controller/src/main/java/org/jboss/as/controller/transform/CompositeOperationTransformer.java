@@ -89,7 +89,7 @@ class CompositeOperationTransformer implements OperationTransformer {
                 final PathAddress transformed = TransformersImpl.transformAddress(useAddress, target);
                 // Update the operation using the new path address
                 step.get(OP_ADDR).set(transformed.toModelNode()); // TODO should this happen by default?
-
+                context.attach(Transformers.ORIGINAL_ADDRESS, stepAddress);
                 result = transformer.transformOperation(context, transformed, step);
             }
             final ModelNode transformedOperation = result.getTransformedOperation();

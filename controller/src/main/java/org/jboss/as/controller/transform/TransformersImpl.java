@@ -73,6 +73,7 @@ public class TransformersImpl implements Transformers {
             ControllerLogger.ROOT_LOGGER.tracef("operation %s does not need transformation", operation);
             return new OperationTransformer.TransformedOperation(operation, OperationResultTransformer.ORIGINAL_RESULT);
         }
+        opCtx.attach(ORIGINAL_ADDRESS, address);
         // Transform the path address
         final PathAddress transformed = transformAddress(useAddress, target);
         // Update the operation using the new path address
@@ -104,6 +105,7 @@ public class TransformersImpl implements Transformers {
         operation.get(OP_ADDR).set(transformed.toModelNode()); // TODO should this happen by default?
 
         final TransformationContext context = ResourceTransformationContextImpl.create(transformationInputs, target, transformed, original, Transformers.DEFAULT);
+        context.attach(ORIGINAL_ADDRESS, original);
         final OperationTransformer transformer = target.resolveTransformer(context, useAddress, operationName);
         if (transformer == null) {
             ControllerLogger.ROOT_LOGGER.tracef("operation %s does not need transformation", operation);

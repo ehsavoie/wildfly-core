@@ -41,6 +41,8 @@ import org.jboss.dmr.ModelNode;
  */
 public interface Transformers {
 
+    OperationContext.AttachmentKey<PathAddress> ORIGINAL_ADDRESS = OperationContext.AttachmentKey.create(PathAddress.class);
+
     /**
      * Get information about the target.
      *

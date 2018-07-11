@@ -37,6 +37,7 @@ import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationTransformerRegistry.PlaceholderResolver;
 import org.jboss.as.controller.registry.Resource;
+import static org.jboss.as.controller.transform.Transformers.ORIGINAL_ADDRESS;
 import org.jboss.dmr.ModelNode;
 
 /**
@@ -57,8 +58,14 @@ class ResourceTransformationContextImpl implements ResourceTransformationContext
                                                 final Transformers.ResourceIgnoredTransformationRegistry ignoredTransformationRegistry) {
         final Resource root = Resource.Factory.create();
         final OriginalModel originalModel = new OriginalModel(tp.getRootResource(), tp.getRunningMode(), tp.getProcessType(), target, tp.getRootRegistration());
-        final TransformerOperationAttachment attachment = tp.getTransformerOperationAttachment();
-        return new ResourceTransformationContextImpl(root, current, read, originalModel, attachment, ignoredTransformationRegistry);
+        final ResourceTransformationContext context;
+        if(tp.getTransformerOperationAttachment() != null) {
+            context = new ResourceTransformationContextImpl(root, current, read, originalModel, tp.getTransformerOperationAttachment(), ignoredTransformationRegistry);
+        } else {
+            context = new ResourceTransformationContextImpl(root, current, read, originalModel, new TransformerOperationAttachment(), ignoredTransformationRegistry);
+        }
+        context.attach(ORIGINAL_ADDRESS, read);
+        return context;
     }
 
     static ResourceTransformationContext create(TransformationTarget target, Resource model,
@@ -354,6 +361,11 @@ class ResourceTransformationContextImpl implements ResourceTransformationContext
     static TransformationContext wrapForOperation(TransformationContext context, ModelNode operation) {
         if(context instanceof ResourceTransformationContextImpl) {
             final ResourceTransformationContextImpl impl = (ResourceTransformationContextImpl) context;
+            if (impl.transformerOperationAttachment == null) {
+                return new ResourceTransformationContextImpl(impl.root,
+                    PathAddress.pathAddress(operation.get(OP_ADDR)), impl.originalModel,
+                    new TransformerOperationAttachment(), impl.ignoredTransformationRegistry);
+            }
             return new ResourceTransformationContextImpl(impl.root,
                     PathAddress.pathAddress(operation.get(OP_ADDR)), impl.originalModel,
                     impl.transformerOperationAttachment, impl.ignoredTransformationRegistry);
