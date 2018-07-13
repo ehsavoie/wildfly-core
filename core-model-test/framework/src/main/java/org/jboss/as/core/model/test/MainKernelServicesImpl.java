@@ -76,7 +76,7 @@ public class MainKernelServicesImpl extends AbstractKernelServicesImpl {
     }
 
     public TransformedOperation transformOperation(ModelVersion modelVersion, ModelNode operation) throws OperationFailedException {
-        return transformOperation(modelVersion, operation, null);
+        return transformOperation(modelVersion, operation, new TransformerOperationAttachment());
     }
 
     public TransformedOperation transformOperation(ModelVersion modelVersion, ModelNode operation, TransformerOperationAttachment attachment) throws OperationFailedException {

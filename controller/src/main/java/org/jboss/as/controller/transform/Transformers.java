@@ -156,7 +156,7 @@ public interface Transformers {
             this.registration = context.getRootResourceRegistration();
             this.processType = context.getProcessType();
             this.runningMode = context.getRunningMode();
-            this.transformerOperationAttachment = context.getAttachment(TransformerOperationAttachment.KEY);
+            this.transformerOperationAttachment = TransformerOperationAttachment.getOrCreate(context);
         }
 
         /**

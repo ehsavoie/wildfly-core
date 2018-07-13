@@ -43,6 +43,7 @@ import org.jboss.as.controller.transform.OperationTransformer.TransformedOperati
 import org.jboss.as.controller.transform.ResourceTransformationContext;
 import org.jboss.as.controller.transform.TransformationContext;
 import org.jboss.as.controller.transform.TransformationTarget;
+import org.jboss.as.controller.transform.TransformerOperationAttachment;
 import org.jboss.as.controller.transform.TransformersLogger;
 import org.jboss.dmr.ModelNode;
 
@@ -194,6 +195,11 @@ abstract class TransformationRule {
         @Override
         public <T> T detach(OperationContext.AttachmentKey<T> key) {
             return delegate.detach(key);
+        }
+
+        @Override
+        public TransformerOperationAttachment getTransformerOperationAttachment(TransformerOperationAttachment attachment) {
+            return delegate.getTransformerOperationAttachment(attachment);
         }
 
     }

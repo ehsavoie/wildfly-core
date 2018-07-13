@@ -21,10 +21,12 @@
 */
 package org.jboss.as.controller.registry;
 
+import org.jboss.as.controller.ContextAttachmentsSupport;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.operations.common.Util;
 import org.jboss.as.controller.transform.TransformationContext;
+import org.jboss.as.controller.transform.TransformerOperationAttachment;
 import org.jboss.as.controller.transform.Transformers;
 import org.jboss.dmr.ModelNode;
 
@@ -96,16 +98,18 @@ public abstract class AliasEntry {
      * A wrapper around {@link OperationContext} for the requested alias address, allowing extra
      * contextual information when converting alias addresses.
      */
-    public static class AliasContext {
+    public static class AliasContext implements ContextAttachmentsSupport {
         public static final String RECURSIVE_GLOBAL_OP = "recursive-global-op";
 
         final ResourceProvider delegate;
         final ModelNode operation;
+        TransformerOperationAttachment transformerOperationAttachment;
 
-        private AliasContext(final ModelNode operation, final ResourceProvider delegate) {
+        private AliasContext(final ModelNode operation, final ResourceProvider delegate, final TransformerOperationAttachment transformerOperationAttachment) {
             this.delegate = delegate;
             this.operation = operation.clone();
             this.operation.protect();
+            this.transformerOperationAttachment = transformerOperationAttachment;
         }
 
         static AliasContext create(final ModelNode operation, final OperationContext delegate) {
@@ -119,7 +123,7 @@ public abstract class AliasEntry {
                 public Resource readResourceFromRoot(PathAddress address, boolean recursive) {
                     return delegate.readResourceFromRoot(address, recursive);
                 }
-            });
+            }, TransformerOperationAttachment.getOrCreate(delegate));
         }
 
         public static AliasContext create(final PathAddress address, final OperationContext delegate) {
@@ -137,7 +141,7 @@ public abstract class AliasEntry {
                 public Resource readResourceFromRoot(PathAddress address, boolean recursive) {
                     return delegate.readResourceFromRoot(address); //I think this is always recursive
                 }
-            });
+            }, TransformerOperationAttachment.getOrCreate(delegate));
         }
 
         public static AliasContext create(ModelNode operation, Transformers.TransformationInputs transformationInputs) {
@@ -165,7 +169,7 @@ public abstract class AliasEntry {
                     }
                     return copy;
                 }
-            });
+            }, transformationInputs.getTransformerOperationAttachment());
         }
 
         /**
@@ -191,6 +195,47 @@ public abstract class AliasEntry {
          */
         public ModelNode getOperation() {
             return operation;
+        }
+
+        @Override
+        public <T> T getAttachment(OperationContext.AttachmentKey<T> key) {
+            if(transformerOperationAttachment != null) {
+                return transformerOperationAttachment.getAttachment(key);
+            }
+            return null;
+        }
+
+        @Override
+        public <T> T attach(OperationContext.AttachmentKey<T> key, T value) {
+            if(transformerOperationAttachment != null) {
+                return transformerOperationAttachment.attach(key, value);
+            }
+            return null;
+        }
+
+        @Override
+        public <T> T attachIfAbsent(OperationContext.AttachmentKey<T> key, T value) {
+            if(transformerOperationAttachment != null) {
+                return transformerOperationAttachment.attachIfAbsent(key, value);
+            }
+            return null;
+        }
+
+        @Override
+        public <T> T detach(OperationContext.AttachmentKey<T> key) {
+            if(transformerOperationAttachment != null) {
+                return transformerOperationAttachment.detach(key);
+            }
+            return null;
+        }
+
+        @Override
+        public TransformerOperationAttachment getTransformerOperationAttachment(TransformerOperationAttachment attachement) {
+            this.transformerOperationAttachment = attachement;
+            if(this.transformerOperationAttachment == null) {
+                this.transformerOperationAttachment = attachement;
+            }
+            return this.transformerOperationAttachment;
         }
 
     }

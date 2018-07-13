@@ -95,7 +95,7 @@ class MainKernelServicesImpl extends AbstractKernelServicesImpl {
      * @throws IllegalStateException if this is not the test's main model controller
      */
     public TransformedOperation transformOperation(ModelVersion modelVersion, ModelNode operation) throws OperationFailedException {
-        return transformOperation(modelVersion, operation, null);
+        return transformOperation(modelVersion, operation, new TransformerOperationAttachment());
     }
 
     public TransformedOperation transformOperation(ModelVersion modelVersion, ModelNode operation,

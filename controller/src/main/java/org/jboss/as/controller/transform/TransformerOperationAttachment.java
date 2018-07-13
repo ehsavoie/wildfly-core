@@ -23,6 +23,7 @@
 package org.jboss.as.controller.transform;
 
 import org.jboss.as.controller.OperationContext;
+import org.jboss.as.controller.ContextAttachmentsSupport;
 
 /**
  * If this attachment is attached to an OperationContext, its internal attachments get propagated to the transformers.
@@ -37,11 +38,8 @@ public class TransformerOperationAttachment {
     public TransformerOperationAttachment() {
     }
 
-    public static TransformerOperationAttachment getOrCreate(OperationContext context) {
-        assert !context.isBooting() : "Only usable once booted";
-        TransformerOperationAttachment attachment = new TransformerOperationAttachment();
-        TransformerOperationAttachment original = context.attachIfAbsent(KEY, attachment);
-        return original == null ? attachment : original;
+    public static TransformerOperationAttachment getOrCreate(ContextAttachmentsSupport context) {
+        return context.getTransformerOperationAttachment(new TransformerOperationAttachment());
     }
 
 

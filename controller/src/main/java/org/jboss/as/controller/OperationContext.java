@@ -50,7 +50,7 @@ import org.wildfly.security.auth.server.SecurityIdentity;
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
-public interface OperationContext extends ExpressionResolver {
+public interface OperationContext extends ExpressionResolver, ContextAttachmentsSupport {
 
     /**
      * Add an execution step to this operation process.  Runtime operation steps are automatically added after
@@ -714,49 +714,6 @@ public interface OperationContext extends ExpressionResolver {
      *            access to the relevant system property or environment variable
      */
     ModelNode resolveExpressions(ModelNode node) throws OperationFailedException;
-
-    /**
-     * Retrieves an object that has been attached to this context.
-     *
-     * @param key the key to the attachment.
-     * @param <T> the value type of the attachment.
-     *
-     * @return the attachment if found otherwise {@code null}.
-     */
-    <T> T getAttachment(AttachmentKey<T> key);
-
-    /**
-     * Attaches an arbitrary object to this context.
-     *
-     * @param key   they attachment key used to ensure uniqueness and used for retrieval of the value.
-     * @param value the value to store.
-     * @param <T>   the value type of the attachment.
-     *
-     * @return the previous value associated with the key or {@code null} if there was no previous value.
-     */
-    <T> T attach(AttachmentKey<T> key, T value);
-
-    /**
-     * Attaches an arbitrary object to this context only if the object was not already attached. If a value has already
-     * been attached with the key provided, the current value associated with the key is returned.
-     *
-     * @param key   they attachment key used to ensure uniqueness and used for retrieval of the value.
-     * @param value the value to store.
-     * @param <T>   the value type of the attachment.
-     *
-     * @return the previous value associated with the key or {@code null} if there was no previous value.
-     */
-    <T> T attachIfAbsent(AttachmentKey<T> key, T value);
-
-    /**
-     * Detaches or removes the value from this context.
-     *
-     * @param key the key to the attachment.
-     * @param <T> the value type of the attachment.
-     *
-     * @return the attachment if found otherwise {@code null}.
-     */
-    <T> T detach(AttachmentKey<T> key);
 
     /**
      * Check for authorization of the given operation.

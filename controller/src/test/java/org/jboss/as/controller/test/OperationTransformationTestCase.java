@@ -19,7 +19,6 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-
 package org.jboss.as.controller.test;
 
 import java.util.Collections;
@@ -50,6 +49,7 @@ import org.jboss.as.controller.transform.ResourceTransformer;
 import org.jboss.as.controller.transform.TransformationContext;
 import org.jboss.as.controller.transform.TransformationTarget;
 import org.jboss.as.controller.transform.TransformationTargetImpl;
+import org.jboss.as.controller.transform.TransformerOperationAttachment;
 import org.jboss.as.controller.transform.TransformerRegistry;
 import org.jboss.as.controller.transform.Transformers;
 import org.jboss.as.controller.transform.TransformersLogger;
@@ -334,6 +334,11 @@ public class OperationTransformationTestCase {
         public <T> T detach(OperationContext.AttachmentKey<T> key) {
             return null;
         }
+
+        @Override
+        public TransformerOperationAttachment getTransformerOperationAttachment(TransformerOperationAttachment attachment) {
+            return attachment;
+        }
     };
 
     private static final ResourceDefinition ROOT = new SimpleResourceDefinition(PathElement.pathElement("test"), new NonResolvingResourceDescriptionResolver());
@@ -405,6 +410,11 @@ public class OperationTransformationTestCase {
         @Override
         public <T> T detach(OperationContext.AttachmentKey<T> key) {
             return null;
+        }
+
+        @Override
+        public TransformerOperationAttachment getTransformerOperationAttachment(TransformerOperationAttachment attachment) {
+            return attachment;
         }
     }
 

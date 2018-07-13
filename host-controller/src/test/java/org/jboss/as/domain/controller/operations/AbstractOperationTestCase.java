@@ -84,6 +84,7 @@ import org.jboss.as.controller.notification.Notification;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
+import org.jboss.as.controller.transform.TransformerOperationAttachment;
 import org.jboss.as.domain.management.CoreManagementResourceDefinition;
 import org.jboss.as.domain.management.access.AccessAuthorizationResourceDefinition;
 import org.jboss.dmr.ModelNode;
@@ -701,6 +702,11 @@ public abstract class AbstractOperationTestCase {
         @Override
         public void addResponseWarning(Level level, ModelNode warning) {
             // TODO Auto-generated method stub
+        }
+
+        @Override
+        public TransformerOperationAttachment getTransformerOperationAttachment(TransformerOperationAttachment attachment) {
+            return attachment;
         }
     }
 

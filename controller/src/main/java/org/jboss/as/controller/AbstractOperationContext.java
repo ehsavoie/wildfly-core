@@ -96,6 +96,7 @@ import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.NotificationEntry;
 import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.as.controller.registry.Resource;
+import org.jboss.as.controller.transform.TransformerOperationAttachment;
 import org.jboss.as.protocol.StreamUtils;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
@@ -1281,10 +1282,15 @@ abstract class AbstractOperationContext implements OperationContext {
         return callEnvironment;
     }
 
+    @Override
+    public TransformerOperationAttachment getTransformerOperationAttachment(TransformerOperationAttachment attachment) {
+        TransformerOperationAttachment original = attachIfAbsent(TransformerOperationAttachment.KEY, attachment);
+        return original == null ? attachment : original;
+    }
 
     @Override
     public boolean isDefaultRequiresRuntime() {
-        if (getProcessType().isServer()) {
+       if (getProcessType().isServer()) {
             return isNormalServer();
         } else if (getProcessType().isHostController()) {
             return isHostCapableAddress();

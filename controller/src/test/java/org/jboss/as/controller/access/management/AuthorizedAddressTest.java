@@ -53,6 +53,7 @@ import org.jboss.as.controller.notification.Notification;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.Resource;
+import org.jboss.as.controller.transform.TransformerOperationAttachment;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
@@ -597,6 +598,11 @@ public class AuthorizedAddressTest {
 
         @Override
         public void addResponseWarning(Level level, ModelNode warning) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public TransformerOperationAttachment getTransformerOperationAttachment(TransformerOperationAttachment attachment) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
     }

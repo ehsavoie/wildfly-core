@@ -404,6 +404,11 @@ class ResourceTransformationContextImpl implements ResourceTransformationContext
         return transformerOperationAttachment.detach(key);
     }
 
+    @Override
+    public TransformerOperationAttachment getTransformerOperationAttachment(TransformerOperationAttachment attachement) {
+        return transformerOperationAttachment;
+    }
+
     static class OriginalModel {
 
         private final Resource original;
