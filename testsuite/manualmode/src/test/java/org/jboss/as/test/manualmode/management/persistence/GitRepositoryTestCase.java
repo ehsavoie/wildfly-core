@@ -24,7 +24,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.util.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -36,8 +35,6 @@ import org.wildfly.core.testrunner.WildflyTestRunner;
 @RunWith(WildflyTestRunner.class)
 @ServerControl(manual = true)
 public class GitRepositoryTestCase extends AbstractGitRepositoryTestCase {
-    private Repository repository;
-
 
     @After
     public void after() throws Exception {
@@ -54,34 +51,90 @@ public class GitRepositoryTestCase extends AbstractGitRepositoryTestCase {
         closeEmptyRemoteRepository();
     }
 
-    private void closeRepository() throws Exception{
-        if (repository != null) {
-            repository.close();
-        }
-        if (Files.exists(getDotGitDir())) {
-            FileUtils.delete(getDotGitDir().toFile(), FileUtils.RECURSIVE | FileUtils.RETRY);
-        }
-        if(Files.exists(getDotGitIgnore())) {
-            FileUtils.delete(getDotGitIgnore().toFile(), FileUtils.RECURSIVE | FileUtils.RETRY);
-        }
-    }
-
     /**
      * Start server (no parameter)
-     * git repository shouldn't be initialized
      */
     @Test
     public void startDefaultTest() throws Exception {
+        // start default (no parameters, no .git in jboss.server.base.dir)
         container.start();
         Assert.assertTrue(Files.notExists(getDotGitDir()));
         Assert.assertTrue(Files.notExists(getDotGitIgnore()));
+        container.stop();
+
+        // start with local repository (--git-repo=local) to initialize the local repo
+        container.startGitBackedConfiguration("local", null, null);
+        Assert.assertTrue("Directory not found " + getDotGitDir(), Files.exists(getDotGitDir()));
+        Assert.assertTrue("File not found " + getDotGitIgnore(), Files.exists(getDotGitIgnore()));
+        container.stop();
+
+        // start with default (no parameters), but with initialized empty repository in jboss.server.base.dir
+        container.start();
+        repository = createRepository();
+        addSystemProperty();
+        int expectedNumberOfCommits = 2;
+        List<String> commits = listCommits(repository);
+        Assert.assertEquals(expectedNumberOfCommits, commits.size());
+        Assert.assertEquals("Storing configuration", commits.get(0));
+        Assert.assertEquals("Repository initialized", commits.get(1));
+        container.stop();
+
+        // start with default (no parameters), local git repository already contains configuration from last run
+        container.start();
+        try {
+            addSystemProperty();
+            Assert.fail("Operation should have failed");
+        } catch (UnsuccessfulOperationException uoe) {
+            Assert.assertTrue(uoe.getMessage().contains("WFLYCTL0212"));
+        }
+        removeSystemProperty();
+        expectedNumberOfCommits++;
+        commits = listCommits(repository);
+        Assert.assertEquals(expectedNumberOfCommits, commits.size());
+        Assert.assertEquals("Storing configuration", commits.get(0));
     }
 
     /**
      * Start server with parameter --git-repo=local
      */
     @Test
-    public void startGitRepoLocal() throws Exception {
+    public void startGitRepoLocalTest() throws Exception {
+        // start with local repository and branch (--git-repo=local --git-branch=my_branch)
+        container.startGitBackedConfiguration("local", "my_branch", null);
+        Assert.assertTrue("Directory not found " + getDotGitDir(), Files.exists(getDotGitDir()));
+        Assert.assertTrue("File not found " + getDotGitIgnore(), Files.exists(getDotGitIgnore()));
+        repository = createRepository();
+        addSystemProperty();
+        int expectedNumberOfCommits = 2;
+        List<String> commits = listCommits(repository);
+        Assert.assertEquals(expectedNumberOfCommits, commits.size());
+        Assert.assertEquals("Storing configuration", commits.get(0));
+        Assert.assertEquals("Repository initialized", commits.get(1));
+        container.stop();
+
+        // create tag in local repo and change master for next test
+        container.startGitBackedConfiguration("local", null, null);
+        takeSnapshot("my_tag", null);
+        Assert.assertEquals(1, listTags(repository).size());
+        removeSystemProperty();
+        container.stop();
+
+        // start with local repository (where repository already exists) and branch where branch is actually tag
+        // (--git-repo=local --git-branch=my_tag)
+        container.startGitBackedConfiguration("local", "my_tag", null);
+        try {
+            addSystemProperty();
+            Assert.fail("Operation should have failed");
+        } catch (UnsuccessfulOperationException uoe) {
+            Assert.assertTrue(uoe.getMessage().contains("WFLYCTL0212"));
+        }
+    }
+
+    /**
+     * Start server with parameter --git-repo=local and make changes in config and deployment
+     */
+    @Test
+    public void historyAndManagementOperationsTest() throws Exception {
         container.startGitBackedConfiguration("local", null, null);
         Assert.assertTrue("Directory not found " + getDotGitDir(), Files.exists(getDotGitDir()));
         Assert.assertTrue("File not found " + getDotGitIgnore(), Files.exists(getDotGitIgnore()));
@@ -217,7 +270,7 @@ public class GitRepositoryTestCase extends AbstractGitRepositoryTestCase {
             Assert.fail("Operation should have failed");
         } catch (UnsuccessfulOperationException uoe) {
             // good
-            Assert.assertEquals("\"WFLYCTL0455: Can't take snapshot foo because it already exists\"", uoe.getMessage());
+            Assert.assertTrue(uoe.getMessage().contains("WFLYCTL0455"));
         }
 
         // :take-snapshot(description=bar) => tag = timestamp, commit msg=bar
@@ -248,7 +301,7 @@ public class GitRepositoryTestCase extends AbstractGitRepositoryTestCase {
             Assert.fail("Operation should have failed");
         } catch (UnsuccessfulOperationException uoe) {
             // good
-            Assert.assertEquals("\"WFLYCTL0455: Can't take snapshot fooo because it already exists\"", uoe.getMessage());
+            Assert.assertTrue(uoe.getMessage().contains("WFLYCTL0455"));
         }
 
         // :publish-configuration => push to origin

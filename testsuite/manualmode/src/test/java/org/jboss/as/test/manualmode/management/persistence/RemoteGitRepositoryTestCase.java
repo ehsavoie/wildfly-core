@@ -40,7 +40,6 @@ import org.wildfly.core.testrunner.WildflyTestRunner;
 @ServerControl(manual = true)
 public class RemoteGitRepositoryTestCase extends AbstractGitRepositoryTestCase {
 
-    private Repository repository;
     private Path remoteRoot;
     private Repository remoteRepository;
 
@@ -77,18 +76,6 @@ public class RemoteGitRepositoryTestCase extends AbstractGitRepositoryTestCase {
         closeRemoteRepository();
     }
 
-    private void closeRepository() throws Exception{
-        if (repository != null) {
-            repository.close();
-        }
-        if (Files.exists(getDotGitDir())) {
-            FileUtils.delete(getDotGitDir().toFile(), FileUtils.RECURSIVE | FileUtils.RETRY);
-        }
-        if(Files.exists(getDotGitIgnore())) {
-            FileUtils.delete(getDotGitIgnore().toFile(), FileUtils.RECURSIVE | FileUtils.RETRY);
-        }
-    }
-
     private void closeRemoteRepository() throws Exception{
         if (remoteRepository != null) {
             remoteRepository.close();
@@ -97,21 +84,47 @@ public class RemoteGitRepositoryTestCase extends AbstractGitRepositoryTestCase {
     }
 
     /**
-     * Start server (no parameter)
-     * git repository shouldn't be initialized
+     * Start server with parameter --git-repo=file:///my_repo/test/.git
      */
     @Test
-    public void startDefaultTest() throws Exception {
-        container.start();
-        Assert.assertTrue(Files.notExists(getDotGitDir()));
-        Assert.assertTrue(Files.notExists(getDotGitIgnore()));
+    public void startGitRepoRemoteTest() throws Exception {
+        // start with remote repository containing configuration (--git-repo=file:///my_repo/test/.git)
+        container.startGitBackedConfiguration("file://" + remoteRoot.resolve(Constants.DOT_GIT).toAbsolutePath().toString(), Constants.MASTER, null);
+        Assert.assertTrue("Directory not found " + getDotGitDir(), Files.exists(getDotGitDir()));
+        Assert.assertTrue("File not found " + getDotGitIgnore(), Files.exists(getDotGitIgnore()));
+        List<String> commits = listCommits(remoteRepository);
+        Assert.assertEquals(1, commits.size());
+        addSystemProperty();
+        publish(null);
+        commits = listCommits(remoteRepository);
+        Assert.assertEquals(3, commits.size());
+
+        // create branch in remote repo and change master for next test
+        Git git = new Git(remoteRepository);
+        git.checkout().setName("my_branch").setCreateBranch(true).call();
+        removeSystemProperty();
+        publish(null);
+        container.stop();
+        closeRepository();
+
+        // start with remote repository and branch containing configuration
+        // (--git-repo=file:///my_repo/test/.git --git-branch=my_branch)
+        container.startGitBackedConfiguration("file://" + remoteRoot.resolve(Constants.DOT_GIT).toAbsolutePath().toString(), "my_branch", null);
+        Assert.assertTrue("Directory not found " + getDotGitDir(), Files.exists(getDotGitDir()));
+        Assert.assertTrue("File not found " + getDotGitIgnore(), Files.exists(getDotGitIgnore()));
+        try {
+            addSystemProperty();
+            Assert.fail("Operation should have failed");
+        } catch (UnsuccessfulOperationException uoe) {
+            Assert.assertTrue(uoe.getMessage().contains("WFLYCTL0212"));
+        }
     }
 
     /**
-     * Start server with parameter --git-repo=local
+     * Start server with parameter --git-repo=file:///my_repo/test/.git
      */
     @Test
-    public void startGitRepoLocal() throws Exception {
+    public void historyAndManagementOperationsTest() throws Exception {
         container.startGitBackedConfiguration("file://" + remoteRoot.resolve(Constants.DOT_GIT).toAbsolutePath().toString(), Constants.MASTER, null);
         Assert.assertTrue("Directory not found " + getDotGitDir(), Files.exists(getDotGitDir()));
         Assert.assertTrue("File not found " + getDotGitIgnore(), Files.exists(getDotGitIgnore()));
@@ -247,7 +260,7 @@ public class RemoteGitRepositoryTestCase extends AbstractGitRepositoryTestCase {
             Assert.fail("Operation should have failed");
         } catch (UnsuccessfulOperationException uoe) {
             // good
-            Assert.assertEquals("\"WFLYCTL0455: Can't take snapshot foo because it already exists\"", uoe.getMessage());
+            Assert.assertTrue(uoe.getMessage().contains("WFLYCTL0455"));
         }
 
         // :take-snapshot(description=bar) => tag = timestamp, commit msg=bar
@@ -278,7 +291,7 @@ public class RemoteGitRepositoryTestCase extends AbstractGitRepositoryTestCase {
             Assert.fail("Operation should have failed");
         } catch (UnsuccessfulOperationException uoe) {
             // good
-            Assert.assertEquals("\"WFLYCTL0455: Can't take snapshot fooo because it already exists\"", uoe.getMessage());
+            Assert.assertTrue(uoe.getMessage().contains("WFLYCTL0455"));
         }
 
 
