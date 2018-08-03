@@ -62,6 +62,7 @@ public class AbstractGitRepositoryTestCase {
     private static final ModelNode TEST_SYSTEM_PROPERTY_ADDRESS = new ModelNode().add("system-property", "git-history-property");
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmm");
     protected Repository emptyRemoteRepository;
+    protected Repository repository;
     private Path emptyRemoteRoot;
 
     static {
@@ -99,6 +100,18 @@ public class AbstractGitRepositoryTestCase {
         config.setString("remote", "empty", "url", "file://" + emptyRemoteRoot.resolve(Constants.DOT_GIT).toAbsolutePath().toString());
         config.save();
         return repo;
+    }
+
+    protected void closeRepository() throws Exception{
+        if (repository != null) {
+            repository.close();
+        }
+        if (Files.exists(getDotGitDir())) {
+            FileUtils.delete(getDotGitDir().toFile(), FileUtils.RECURSIVE | FileUtils.RETRY);
+        }
+        if(Files.exists(getDotGitIgnore())) {
+            FileUtils.delete(getDotGitIgnore().toFile(), FileUtils.RECURSIVE | FileUtils.RETRY);
+        }
     }
 
     protected List<String> listCommits(Repository repository) throws IOException, GitAPIException {
