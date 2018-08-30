@@ -940,9 +940,10 @@ class AdvancedModifiableKeyStoreDecorator extends ModifiableKeyStoreDecorator {
                 if (certificate == null) {
                     throw ROOT_LOGGER.unableToObtainCertificate(alias);
                 }
-                Date current = new Date();
-                Date notAfter = certificate.getNotAfter();
-                long difference = notAfter.getTime() - current.getTime();
+                Date current = new Date(); //local TZ
+                long offset = ZoneId.systemDefault().getRules().getOffset(current.toInstant()).getTotalSeconds() * 1000;
+                Date notAfter = certificate.getNotAfter(); //in UTC
+                long difference = notAfter.getTime() - current.getTime() - offset;
                 long daysToExpiry = 0;
                 ModelNode result = context.getResult();
                 if (difference <= 0) {
