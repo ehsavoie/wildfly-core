@@ -45,6 +45,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -941,9 +942,9 @@ class AdvancedModifiableKeyStoreDecorator extends ModifiableKeyStoreDecorator {
                     throw ROOT_LOGGER.unableToObtainCertificate(alias);
                 }
                 Date current = new Date(); //local TZ
-                long offset = ZoneId.systemDefault().getRules().getOffset(current.toInstant()).getTotalSeconds() * 1000;
-                Date notAfter = certificate.getNotAfter(); //in UTC
-                long difference = notAfter.getTime() - current.getTime() - offset;
+                ZonedDateTime notAfter = ZonedDateTime.ofInstant(certificate.getNotAfter().toInstant(),
+                                          ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC);
+                long difference = notAfter.toInstant().toEpochMilli() - current.getTime();
                 long daysToExpiry = 0;
                 ModelNode result = context.getResult();
                 if (difference <= 0) {
