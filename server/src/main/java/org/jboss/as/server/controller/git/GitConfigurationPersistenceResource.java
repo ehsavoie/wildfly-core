@@ -26,6 +26,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Constants;
+import org.jboss.as.controller.logging.ControllerLogger;
 import org.jboss.as.controller.persistence.AbstractConfigurationPersister;
 import org.jboss.as.controller.persistence.AbstractFilePersistenceResource;
 import org.jboss.as.controller.persistence.ConfigurationPersistenceException;
@@ -49,6 +50,18 @@ public class GitConfigurationPersistenceResource extends AbstractFilePersistence
     }
 
     @Override
+    public void commit(String msg) {
+        if (marshalled == null) {
+            throw ControllerLogger.ROOT_LOGGER.rollbackAlreadyInvoked();
+        }
+        try (InputStream in = getMarshalledInputStream()) {
+            doCommit(msg, in);
+        } catch (IOException ioex) {
+            MGMT_OP_LOGGER.errorf(ioex, ioex.getMessage());
+        }
+    }
+
+    @Override
     public void rollback() {
         super.rollback();
         try (Git git = repository.getGit()) {
@@ -69,13 +82,18 @@ public class GitConfigurationPersistenceResource extends AbstractFilePersistence
     }
 
     @Override
-    protected void doCommit(InputStream in) {
+    protected void doCommit(String msg, InputStream in) {
         try {
             Files.copy(in, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            gitCommit("Storing configuration");
+            gitCommit(msg);
         } catch (IOException ex) {
             MGMT_OP_LOGGER.failedToStoreConfiguration(ex, file.getName());
         }
+    }
+
+    @Override
+    protected void doCommit(InputStream marshalled) {
+        doCommit("Storing configuration", marshalled);
     }
 
 }

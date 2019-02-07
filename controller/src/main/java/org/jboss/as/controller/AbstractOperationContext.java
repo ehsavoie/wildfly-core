@@ -69,6 +69,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -188,6 +189,7 @@ abstract class AbstractOperationContext implements OperationContext {
      */
     private final Set<PathAddress> modifiedResourcesForModelValidation;
 
+    private StringJoiner commitMessages = new StringJoiner("\n").setEmptyValue("Storing configuration");
 
     enum ContextFlag {
         ROLLBACK_ON_FAIL, ALLOW_RESOURCE_SERVICE_RESTART,
@@ -852,7 +854,7 @@ abstract class AbstractOperationContext implements OperationContext {
                 if (resultAction == ResultAction.ROLLBACK) {
                     persistenceResource.rollback();
                 } else {
-                    persistenceResource.commit();
+                    persistenceResource.commit(commitMessages.toString());
                 }
             }
         } catch (Throwable t) {
@@ -997,6 +999,10 @@ abstract class AbstractOperationContext implements OperationContext {
                 ClassLoader oldTccl = WildFlySecurityManager.setCurrentContextClassLoaderPrivileged(step.handler.getClass());
                 try {
                     step.handler.execute(this, step.operation);
+                    String msg = step.getCommitMessage();
+                    if(msg != null && !msg.isBlank()) {
+                        commitMessages.add(msg);
+                    }
                     // AS7-6046
                     if (isErrorLoggingNecessary() && step.hasFailed()) {
                         MGMT_OP_LOGGER.operationFailed(step.operation.get(OP), step.operation.get(OP_ADDR),
@@ -1403,6 +1409,15 @@ abstract class AbstractOperationContext implements OperationContext {
             return resourceRegistration;
         }
 
+        private String getCommitMessage() {
+            if (this.operation.hasDefined(OPERATION_HEADERS, "GIT_MESSAGE")) {
+                String message = this.operation.get(OPERATION_HEADERS, "GIT_MESSAGE").asStringOrNull();
+                this.operation.get(OPERATION_HEADERS).remove("GIT_MESSAGE");
+                return message;
+            }
+            return null;
+        }
+
         private List<Step> findPathToRootStep() {
             List<Step> result = new ArrayList<>();
             Step current = this;
@@ -1470,7 +1485,6 @@ abstract class AbstractOperationContext implements OperationContext {
 
             try {
                 handleResult();
-
                 if (currentStage != null && currentStage != Stage.DONE) {
                     currentStage = Stage.DONE;
                     response.get(OUTCOME).set(cancelled ? CANCELLED : FAILED);

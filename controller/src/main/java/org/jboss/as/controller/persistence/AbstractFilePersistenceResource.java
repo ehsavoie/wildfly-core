@@ -36,7 +36,7 @@ import org.xnio.IoUtils;
  * @author <a href="kabir.khan@jboss.com">Kabir Khan</a>
  */
 public abstract class AbstractFilePersistenceResource implements ConfigurationPersister.PersistenceResource {
-    private volatile ExposedByteArrayOutputStream marshalled;
+    protected volatile ExposedByteArrayOutputStream marshalled;
 
     protected AbstractFilePersistenceResource(final ModelNode model, final AbstractConfigurationPersister persister) throws ConfigurationPersistenceException {
         marshalled = new ExposedByteArrayOutputStream(1024 * 8);
@@ -60,7 +60,7 @@ public abstract class AbstractFilePersistenceResource implements ConfigurationPe
             throw ControllerLogger.ROOT_LOGGER.rollbackAlreadyInvoked();
         }
         try(InputStream in = getMarshalledInputStream()) {
-            doCommit(in);
+            doCommit("", in);
         } catch (IOException ioex) {
             MGMT_OP_LOGGER.errorf(ioex, ioex.getMessage());
         }
@@ -76,4 +76,8 @@ public abstract class AbstractFilePersistenceResource implements ConfigurationPe
     }
 
     protected abstract void doCommit(InputStream marshalled);
+
+    protected void doCommit(String msg, InputStream marshalled) {
+        doCommit(marshalled);
+    }
 }

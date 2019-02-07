@@ -710,6 +710,28 @@ class ModelControllerImpl implements ModelController {
         return new ConfigurationPersister.PersistenceResource() {
 
             @Override
+            public void commit(String msg) {
+                // Discard the tracker first, so if there's any race the new OperationContextImpl
+                // gets a cleared tracker
+                if (hostServerGroupTracker != null) {
+                    hostServerGroupTracker.invalidate();
+                }
+                // Publish capability registry mods if the caller knows it modified it
+                // or if it modified the resource reg tree, as the registrations may
+                // have modified the cap reg without the caller knowing
+                if ((capabilityRegistryModified || resourceRegistrationModified)
+                        && model.capabilityRegistry.isModified()) {
+                    model.capabilityRegistry.publish();
+                }
+                if (resourceTreeModified) {
+                    model.publish();
+                    if (delegate != null) {
+                        delegate.commit(msg);
+                    }
+                }
+            }
+
+            @Override
             public void commit() {
                 // Discard the tracker first, so if there's any race the new OperationContextImpl
                 // gets a cleared tracker

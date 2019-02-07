@@ -42,7 +42,6 @@ public interface ConfigurationPersister {
      * to control whether the stored model should be flushed to permanent storage.
      */
     interface PersistenceResource {
-
         /**
          * Flush the stored model to permanent storage.
          */
@@ -52,6 +51,10 @@ public interface ConfigurationPersister {
          * Discard the changes.
          */
         void rollback();
+
+        default void commit(String msg) {
+            commit();
+        }
     }
 
     /**

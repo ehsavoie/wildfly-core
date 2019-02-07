@@ -89,7 +89,7 @@ public class AbstractGitPersistenceResourceTestCase {
     }
 
     protected void store(TestConfigurationFilePersister persister, String s) throws Exception {
-        persister.store(new ModelNode(s), Collections.<PathAddress>emptySet()).commit();
+        persister.store(new ModelNode(s), Collections.<PathAddress>emptySet()).commit("Storing configuration");
     }
 
     protected List<String> listCommits(Repository repository) throws IOException, GitAPIException {
