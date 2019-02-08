@@ -49,15 +49,28 @@ public class HeaderValueState extends ExpressionBaseState {
         enterState('[', new DefaultStateWithEndCharacter("BRACKETS", ']', true, true, enterStateHandlers));
         enterState('(', new DefaultStateWithEndCharacter("PARENTHESIS", ')', true, true, enterStateHandlers));
         enterState('{', new DefaultStateWithEndCharacter("BRACES", '}', true, true, enterStateHandlers));
-        setEnterHandler(new CharacterHandler(){
+        setEnterHandler(new CharacterHandler() {
             @Override
             public void handle(ParsingContext ctx) throws CommandFormatException {
-                if(ctx.getCharacter() != '=') {
-                    ctx.getCallbackHandler().character(ctx);
+                if (ctx.getCharacter() != '=') {
+                    if (ctx.getCharacter() == '"') {
+                        ctx.enterState(QuotesState.QUOTES_EXCLUDED);
+                    } else {
+                        ctx.getCallbackHandler().character(ctx);
+                    }
                 }
-            }});
+            }
+        });
         setDefaultHandler(WordCharacterHandler.IGNORE_LB_ESCAPE_ON);
-        setReturnHandler(GlobalCharacterHandlers.LEAVE_STATE_HANDLER);
+        setReturnHandler(new CharacterHandler() {
+            @Override
+            public void handle(ParsingContext ctx) throws CommandFormatException {
+                final char c = ctx.getCharacter();
+                if (c == ';') {
+                    ctx.leaveState();
+                }
+            }
+        });
         setIgnoreWhitespaces(true);
     }
 
