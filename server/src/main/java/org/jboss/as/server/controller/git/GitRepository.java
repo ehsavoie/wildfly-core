@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
+
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CheckoutResult;
@@ -52,6 +53,7 @@ import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.SshSessionFactory;
 import org.jboss.as.server.logging.ServerLogger;
 import org.wildfly.client.config.ConfigXMLParseException;
 
@@ -79,6 +81,8 @@ public class GitRepository implements Closeable {
         if (gitConfig.getAuthenticationConfig() != null) {
             CredentialsProvider.setDefault(new ElytronClientCredentialsProvider(gitConfig.getAuthenticationConfig()));
         }
+        SshSessionFactory sshdSessionFactory = new ElytronClientSshdSessionFactory(gitConfig.getAuthenticationConfig());
+        SshSessionFactory.setInstance(sshdSessionFactory);
         if (gitDir.exists()) {
             try {
                 repository = new FileRepositoryBuilder().setWorkTree(baseDir).setGitDir(gitDir).setup().build();
@@ -183,7 +187,7 @@ public class GitRepository implements Closeable {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                     if (!ignored.contains(dir.getFileName().toString() + '/')) {
-                    return FileVisitResult.CONTINUE;
+                        return FileVisitResult.CONTINUE;
                     }
                     return FileVisitResult.SKIP_SUBTREE;
                 }
