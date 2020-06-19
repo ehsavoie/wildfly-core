@@ -24,28 +24,6 @@
       </licenses>
     </dependency>
     <dependency>
-      <groupId>com.jcraft</groupId>
-      <artifactId>jsch</artifactId>
-      <licenses>
-        <license>
-          <name>BSD 3-Clause "New" or "Revised" License</name>
-          <url>http://www.opensource.org/licenses/BSD-3-Clause</url>
-          <distribution>repo</distribution>
-        </license>
-      </licenses>
-    </dependency>
-    <dependency>
-      <groupId>com.jcraft</groupId>
-      <artifactId>jzlib</artifactId>
-      <licenses>
-        <license>
-          <name>BSD 3-Clause "New" or "Revised" License</name>
-          <url>http://www.opensource.org/licenses/BSD-3-Clause</url>
-          <distribution>repo</distribution>
-        </license>
-      </licenses>
-    </dependency>
-    <dependency>
       <groupId>io.undertow</groupId>
       <artifactId>undertow-core</artifactId>
       <licenses>
