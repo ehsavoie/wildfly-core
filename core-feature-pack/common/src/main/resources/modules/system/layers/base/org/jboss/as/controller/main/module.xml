@@ -59,5 +59,6 @@
         <module name="org.jboss.threads"/>
         <module name="org.projectodd.vdx"/>
         <module name="org.eclipse.jgit" optional="true" export="true"/>
+        <module name="org.yaml.snakeyaml"/>
     </dependencies>
 </module>

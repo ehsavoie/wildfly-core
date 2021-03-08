@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -43,6 +44,7 @@ import org.jboss.as.controller.audit.ManagedAuditLogger;
 import org.jboss.as.controller.audit.ManagedAuditLoggerImpl;
 import org.jboss.as.controller.interfaces.InetAddressUtil;
 import org.jboss.as.controller.operations.common.ProcessEnvironment;
+import org.jboss.as.controller.persistence.ConfigurationExtension;
 import org.jboss.as.controller.persistence.ConfigurationFile;
 import org.jboss.as.network.NetworkUtils;
 import org.jboss.as.server.controller.git.GitRepository;
@@ -332,7 +334,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
                              final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
                              final RunningMode initialRunningMode, ProductConfig productConfig, boolean startSuspended) {
         this(hostControllerName, props, env, serverConfig, configInteractionPolicy, launchType, initialRunningMode, productConfig,
-                System.currentTimeMillis(), startSuspended, null, null, null);
+                System.currentTimeMillis(), startSuspended, null, null, null, null);
     }
 
     @Deprecated
@@ -340,32 +342,43 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
                              final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
                              final RunningMode initialRunningMode, ProductConfig productConfig) {
         this(hostControllerName, props, env, serverConfig, configInteractionPolicy, launchType, initialRunningMode, productConfig,
-                System.currentTimeMillis(), false, null, null, null);
+                System.currentTimeMillis(), false, null, null, null, null);
     }
 
     @Deprecated
     public ServerEnvironment(final String hostControllerName, final Properties props, final Map<String, String> env, final String serverConfig,
                              final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
-                             final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, String gitRepository, String gitBranch, String gitAuthConfiguration) {
+                             final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, String gitRepository,
+                             String gitBranch, String gitAuthConfiguration, String yaml) {
         this(hostControllerName, props, env, serverConfig, configInteractionPolicy, launchType, initialRunningMode, productConfig,
-                startTime, false, gitRepository, gitBranch, gitAuthConfiguration);
+                startTime, false, gitRepository, gitBranch, gitAuthConfiguration, yaml);
     }
 
     @Deprecated
     public ServerEnvironment(final String hostControllerName, final Properties props, final Map<String, String> env, final String serverConfig,
                              final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
                              final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, boolean startSuspended,
-                             String gitRepository, String gitBranch, String gitAuthConfiguration) {
+                             String gitRepository, String gitBranch, String gitAuthConfiguration, String yaml) {
         this(hostControllerName, props, env, serverConfig, configInteractionPolicy, launchType, initialRunningMode,
-                productConfig, startTime, startSuspended, false, gitRepository, gitBranch, gitAuthConfiguration);
+                productConfig, startTime, startSuspended, false, gitRepository, gitBranch, gitAuthConfiguration, yaml);
     }
 
     public ServerEnvironment(final String hostControllerName, final Properties props, final Map<String, String> env, final String serverConfig,
-                             final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
+                             final ConfigurationFile.InteractionPolicy configurationInteractionPolicy, final LaunchType launchType,
                              final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, boolean startSuspended,
-                             final boolean startGracefully, final String gitRepository, final String gitBranch, final String gitAuthConfiguration) {
+                             final boolean startGracefully, final String gitRepository, final String gitBranch, final String gitAuthConfiguration,
+                             final String yaml) {
         assert props != null;
-
+        ConfigurationFile.InteractionPolicy configInteractionPolicy = configurationInteractionPolicy;
+        Path yamlFile = null;
+        if (yaml != null) {
+            yamlFile = new File(yaml).toPath();
+            if (Files.exists(yamlFile) && Files.isRegularFile(yamlFile)) {
+                configInteractionPolicy = ConfigurationFile.InteractionPolicy.READ_ONLY;
+            } else {
+                yamlFile = null;
+            }
+        }
         this.startSuspended = startSuspended;
         this.startGracefully = startGracefully;
 
@@ -547,7 +560,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
             } else {
                 repository = null;
             }
-            serverConfigurationFile = standalone ? new ConfigurationFile(serverConfigurationDir, defaultServerConfig, serverConfig, configInteractionPolicy, repository != null, serverTempDir) : null;
+            serverConfigurationFile = standalone ? new ConfigurationFile(serverConfigurationDir, defaultServerConfig, serverConfig, configInteractionPolicy, repository != null, serverTempDir, yamlFile) : null;
             // Adds a system property to indicate whether or not the server configuration should be persisted
             @SuppressWarnings("deprecation")
             final String propertyKey = JBOSS_PERSIST_SERVER_CONFIG;
@@ -1110,6 +1123,10 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
 
     public GitRepository getGitRepository() {
         return repository;
+    }
+
+    public ConfigurationExtension getConfigurationExtension() {
+        return this.getServerConfigurationFile() != null ? this.getServerConfigurationFile().getConfigurationExtension() : null;
     }
 
     /**
