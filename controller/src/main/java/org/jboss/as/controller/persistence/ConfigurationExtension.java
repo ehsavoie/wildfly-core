@@ -19,15 +19,12 @@ import java.util.List;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.ParsedBootOp;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
-import org.jboss.as.controller.registry.ManagementResourceRegistration;
 
 /**
  *
  * @author Emmanuel Hugonnet (c) 2021 Red Hat, Inc.
  */
 public interface ConfigurationExtension {
-
-    void processExtensions(ManagementResourceRegistration rootRegistration, List<ParsedBootOp> initialOps);
 
     void processOperations(OperationContext context, ImmutableManagementResourceRegistration rootRegistration, List<ParsedBootOp> postExtensionOps);
 }

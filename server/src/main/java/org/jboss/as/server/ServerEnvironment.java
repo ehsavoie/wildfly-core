@@ -374,7 +374,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
         if (yaml != null) {
             yamlFile = new File(yaml).toPath();
             if (Files.exists(yamlFile) && Files.isRegularFile(yamlFile)) {
-                configInteractionPolicy = ConfigurationFile.InteractionPolicy.READ_ONLY;
+//                configInteractionPolicy = ConfigurationFile.InteractionPolicy.READ_ONLY;
             } else {
                 yamlFile = null;
             }

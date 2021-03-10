@@ -495,9 +495,7 @@ class ModelControllerImpl implements ModelController {
         // Add to the context all ops prior to the first ExtensionAddHandler as well as all ExtensionAddHandlers; save the rest.
         // This gets extensions registered before proceeding to other ops that count on these registrations
         BootOperations bootOperations = organizeBootOperations(bootList, operationID, parallelBootRootResourceRegistrationProvider);
-        if(configExtension != null) {
-            configExtension.processExtensions(managementModel.get().getRootResourceRegistration(), bootOperations.initialOps);
-        }
+
         OperationContext.ResultAction resultAction = bootOperations.invalid ? OperationContext.ResultAction.ROLLBACK : OperationContext.ResultAction.KEEP;
         if (bootOperations.initialOps.size() > 0) {
             // Run the steps up to the last ExtensionAddHandler
