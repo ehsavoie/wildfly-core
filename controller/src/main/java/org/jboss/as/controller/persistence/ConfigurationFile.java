@@ -134,7 +134,7 @@ public class ConfigurationFile {
     /* Backup copy of the most recent configuration, stored in the history dir.
        May be used as {@link #bootFile}; see {@link #reloadUsingLast} */
     private volatile File lastFile;
-    private volatile Path yamlFile;
+    private volatile Path[] yamlFiles;
     private final boolean useGit;
 
     /**
@@ -150,7 +150,7 @@ public class ConfigurationFile {
      *                                    to the configuration history directory
      */
     public ConfigurationFile(final File configurationDir, final String rawName, final String name, final boolean persistOriginal) {
-        this(configurationDir, rawName, name, persistOriginal ? InteractionPolicy.STANDARD : InteractionPolicy.READ_ONLY, false, null);
+        this(configurationDir, rawName, name, persistOriginal ? InteractionPolicy.STANDARD : InteractionPolicy.READ_ONLY, false, null, (Path[])null);
     }
 
     /**
@@ -166,8 +166,8 @@ public class ConfigurationFile {
      * @param yamlFile          yaml file containing extra configuration.
      */
     public ConfigurationFile(final File configurationDir, final String rawName, final String name, final InteractionPolicy interactionPolicy,
-            final boolean useGit, final Path yamlFile) {
-        this(configurationDir, rawName, name, interactionPolicy, useGit, null, yamlFile);
+            final boolean useGit, final Path... yamlFiles) {
+        this(configurationDir, rawName, name, interactionPolicy, useGit, null, yamlFiles);
     }
 
     /**
@@ -182,11 +182,11 @@ public class ConfigurationFile {
      * @param useGit            {@code true} if configuration is using Git to manage its history.
      * @param tmpDir            The server temporary directory to use as a fallback if the configuration directory cannot
      *                          be written and we are running on read only mode.
-     * @param yamlFile          yaml file containing extra configuration.
+     * @param yamlFile          yaml files containing extra configuration.
      */
     public ConfigurationFile(final File configurationDir, final String rawName, final String name,
                              final InteractionPolicy interactionPolicy, final boolean useGit, final File tmpDir,
-                             final Path yamlFile) {
+                             final Path... yamlFiles) {
         if (!configurationDir.exists() || !configurationDir.isDirectory()) {
             throw ControllerLogger.ROOT_LOGGER.directoryNotFound(configurationDir.getAbsolutePath());
         }
@@ -208,7 +208,7 @@ public class ConfigurationFile {
         } catch (IOException ioe) {
             throw ControllerLogger.ROOT_LOGGER.canonicalMainFileNotFound(ioe, file);
         }
-        this.yamlFile = yamlFile;
+        this.yamlFiles = yamlFiles;
     }
 
     public boolean useGit() {
@@ -314,7 +314,7 @@ public class ConfigurationFile {
     }
 
     public ConfigurationExtension getConfigurationExtension() {
-        return new YamlConfigurationExtension(yamlFile);
+        return new YamlConfigurationExtension(yamlFiles);
     }
 
     public InteractionPolicy getInteractionPolicy() {

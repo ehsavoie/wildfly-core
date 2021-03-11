@@ -27,9 +27,11 @@ import java.io.Serializable;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -370,14 +372,9 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
                              final String yaml) {
         assert props != null;
         ConfigurationFile.InteractionPolicy configInteractionPolicy = configurationInteractionPolicy;
-        Path yamlFile = null;
-        if (yaml != null) {
-            yamlFile = new File(yaml).toPath();
-            if (Files.exists(yamlFile) && Files.isRegularFile(yamlFile)) {
+        Path[] yamlFiles = findYamlFiles(yaml);
+        if (yamlFiles.length > 0) {
 //                configInteractionPolicy = ConfigurationFile.InteractionPolicy.READ_ONLY;
-            } else {
-                yamlFile = null;
-            }
         }
         this.startSuspended = startSuspended;
         this.startGracefully = startGracefully;
@@ -560,7 +557,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
             } else {
                 repository = null;
             }
-            serverConfigurationFile = standalone ? new ConfigurationFile(serverConfigurationDir, defaultServerConfig, serverConfig, configInteractionPolicy, repository != null, serverTempDir, yamlFile) : null;
+            serverConfigurationFile = standalone ? new ConfigurationFile(serverConfigurationDir, defaultServerConfig, serverConfig, configInteractionPolicy, repository != null, serverTempDir, yamlFiles) : null;
             // Adds a system property to indicate whether or not the server configuration should be persisted
             @SuppressWarnings("deprecation")
             final String propertyKey = JBOSS_PERSIST_SERVER_CONFIG;
@@ -702,6 +699,21 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
                 }
             }
         }
+    }
+
+    private Path[] findYamlFiles(String yaml) {
+        List<Path> yamlPaths = new ArrayList<>();
+        if (yaml != null && !yaml.isEmpty()) {
+            for (String yamlFile : yaml.split(File.pathSeparator)) {
+                Path yamlPath = new File(yamlFile).toPath();
+                if (Files.exists(yamlPath) && Files.isRegularFile(yamlPath)) {
+                    yamlPaths.add(yamlPath);
+                } else {
+                    throw new IllegalArgumentException(yamlFile + " doesn't exist");
+                }
+            }
+        }
+        return yamlPaths.toArray(new Path[yamlPaths.size()]);
     }
 
     void resetProvidedProperties() {

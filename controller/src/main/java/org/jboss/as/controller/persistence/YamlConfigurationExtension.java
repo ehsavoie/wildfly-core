@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,11 +56,12 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
 
     private static final String CONFIGURATION_ROOT_KEY = "wildfly-bootable";
 
-    private final Map<String, Object> config;
+    private final List<Map<String, Object>> configs = new ArrayList<>();
 
     @SuppressWarnings("unchecked")
-    public YamlConfigurationExtension(Path file) {
+    public YamlConfigurationExtension(Path... files) {
         long start = System.currentTimeMillis();
+        for(Path file : files) {
         if (file != null && Files.exists(file) && Files.isRegularFile(file)) {
             Map<String, Object> yamlConfig = Collections.emptyMap();
             try (InputStream inputStream = Files.newInputStream(file)) {
@@ -69,14 +71,11 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                 MGMT_OP_LOGGER.warn("Error parsing yaml file %s ", file.toString(), ioex);
             }
             if (yamlConfig.containsKey(CONFIGURATION_ROOT_KEY)) {
-                this.config = (Map<String, Object>) yamlConfig.get(CONFIGURATION_ROOT_KEY);
-            } else {
-                this.config = Collections.emptyMap();
+                this.configs.add((Map<String, Object>) yamlConfig.get(CONFIGURATION_ROOT_KEY));
             }
-        } else {
-            this.config = Collections.emptyMap();
         }
-        MGMT_OP_LOGGER.warnf("It took %s ms to load and parse the yaml file", System.currentTimeMillis() - start);
+        }
+        MGMT_OP_LOGGER.warnf("It took %s ms to load and parse the yaml files", System.currentTimeMillis() - start);
     }
 
     @SuppressWarnings("unchecked")
@@ -93,9 +92,12 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                 }
             }
         }
+        for(Map<String, Object> config : configs) {
         processResource(PathAddress.EMPTY_ADDRESS, new HashMap<>(config), context, rootRegistration, rootRegistration, xmlOperations, postExtensionOps, false);
+        }
     }
 
+    @SuppressWarnings("unchecked")
     private void processResource(PathAddress parentAddress, Map<String, Object> yaml, OperationContext context, ImmutableManagementResourceRegistration rootRegistration, ImmutableManagementResourceRegistration resourceRegistration, Map<PathAddress, ParsedBootOp> xmlOperations, List<ParsedBootOp> postExtensionOps, boolean placeHolder) {
         for (String name : yaml.keySet()) {
             if (resourceRegistration.getChildNames(PathAddress.EMPTY_ADDRESS).contains(name) || placeHolder) {
@@ -108,7 +110,6 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                 }
                 Object value = yaml.get(name);
                 if (value instanceof Map) {
-                    @SuppressWarnings("unchecked")
                     Map<String, Object> map = (Map<String, Object>) value;
                     ImmutableManagementResourceRegistration childResourceRegistration = rootRegistration.getSubModel(address);
                     if (childResourceRegistration != null) {
@@ -118,7 +119,12 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                         processResource(address, map, context, rootRegistration, resourceRegistration, xmlOperations, postExtensionOps, true);
                     }
                 } else {
-                    MGMT_OP_LOGGER.warnf("We have a value %s for address %s", value, address.toCLIStyleString());
+                    if( value == null && !isExistingResource(xmlOperations, address)) { //empty resource
+                        OperationEntry operationEntry = rootRegistration.getOperationEntry(address, ADD);
+                        processAttributes(address, rootRegistration, operationEntry, Collections.emptyMap(), postExtensionOps);
+                    } else {
+                        MGMT_OP_LOGGER.warnf("You have defined a resource for address %s without any attributes, doing nothing", address.toCLIStyleString());
+                    }
                 }
             } else {
                 PathAddress address = parentAddress.getParent().append(parentAddress.getLastElement().getKey(), name);
@@ -131,7 +137,7 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                         Map<String, Object> map = (Map<String, Object>) value;
                         processResource(address, map, context, rootRegistration, rootRegistration.getSubModel(address), xmlOperations, postExtensionOps, false);
                     } else {
-                        MGMT_OP_LOGGER.warnf("We have a value %s for address %s", value, address.toCLIStyleString());
+                        MGMT_OP_LOGGER.warnf("You have defined a resource for address %s without any attributes, doing nothing", address.toCLIStyleString());
                     }
                 } else {
                     if (resourceRegistration.getAttributeNames(PathAddress.EMPTY_ADDRESS).contains(name)) {
@@ -150,7 +156,7 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                                     Map<String, Object> map = (Map<String, Object>) value;
                                     processResource(address, map, context, rootRegistration, childResourceRegistration, xmlOperations, postExtensionOps, false);
                                 } else {
-                                    MGMT_OP_LOGGER.warnf("We have a value %s for address %s", value, address.toCLIStyleString());
+                                    MGMT_OP_LOGGER.warnf("We have a value %s for address %s and name %s", value, address.toCLIStyleString(), name);
                                 }
                             } else {
                                 MGMT_OP_LOGGER.debugf("Resource for address %s needs to be created with parameters %s", address.toCLIStyleString(), Arrays.stream(operationEntry.getOperationDefinition().getParameters()).map(AttributeDefinition::getName).collect(Collectors.joining()));
@@ -161,7 +167,7 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                                     processAttributes(address, rootRegistration, operationEntry, map, postExtensionOps);
                                     processResource(address, map, context, rootRegistration, childResourceRegistration, xmlOperations, postExtensionOps, false);
                                 } else {
-                                    MGMT_OP_LOGGER.warnf("We have a value %s for address %s and name %s", value, address.toCLIStyleString(), name);
+                                    MGMT_OP_LOGGER.warnf("-------- We have a value %s for address %s and name %s", value, address.toCLIStyleString(), name);
                                 }
                             }
                         } else {
@@ -183,32 +189,30 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
         if (attributeAccess.getStorageType() == AttributeAccess.Storage.CONFIGURATION) {
             AttributeDefinition att = attributeAccess.getAttributeDefinition();
             if (att != null && !att.isResourceOnly()) {
-                ModelNode op = new ModelNode();
-                op.get(OP_ADDR).set(address.toModelNode());
-                op.get(NAME).set(attributeName);
-                OperationEntry operationEntry;
-                ParsedBootOp operation;
                 switch (att.getType()) {
-                    case OBJECT:
+                    case OBJECT: {
                         //ObjectTypeAttributeDefinition
-                        op.get(OP).set(WRITE_ATTRIBUTE_OPERATION);
+                        OperationEntry operationEntry = rootRegistration.getOperationEntry(address, WRITE_ATTRIBUTE_OPERATION);
+                        ModelNode op = createOperation(address, operationEntry);
+                        op.get(NAME).set(attributeName);
                         op.get(VALUE).set(processObjectAttribute((ObjectTypeAttributeDefinition) att, (Map<String, Object>) value));
-                        operationEntry = rootRegistration.getOperationEntry(address, WRITE_ATTRIBUTE_OPERATION);
-                        operation = new ParsedBootOp(op, operationEntry.getOperationHandler());
                         MGMT_OP_LOGGER.debugf("Updating attribute %s for resource %s with operation %s", attributeName, address, op);
-                        postExtensionOps.add(operation);
+                        postExtensionOps.add(new ParsedBootOp(op, operationEntry.getOperationHandler()));
+                    }
                         break;
-                    case LIST:
-                        operationEntry = rootRegistration.getOperationEntry(address, "list-add");
+                    case LIST: {
+                        OperationEntry operationEntry = rootRegistration.getOperationEntry(address, "list-add");
                         processListElements((ListAttributeDefinition) att, postExtensionOps, operationEntry, address, value);
+                    }
                         break;
-                    default:
-                        op.get(OP).set(WRITE_ATTRIBUTE_OPERATION);
+                    default: {
+                        OperationEntry operationEntry = rootRegistration.getOperationEntry(address, WRITE_ATTRIBUTE_OPERATION);
+                        ModelNode op = createOperation(address, operationEntry);
+                        op.get(NAME).set(attributeName);
                         op.get(VALUE).set(value.toString());
-                        operationEntry = rootRegistration.getOperationEntry(address, WRITE_ATTRIBUTE_OPERATION);
-                        operation = new ParsedBootOp(op, operationEntry.getOperationHandler());
                         MGMT_OP_LOGGER.debugf("Updating attribute %s for resource %s with operation %s", attributeName, address, op);
-                        postExtensionOps.add(operation);
+                        postExtensionOps.add(new ParsedBootOp(op, operationEntry.getOperationHandler()));
+                    }
                         break;
                 }
             }
@@ -217,7 +221,6 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
 
     @SuppressWarnings("unchecked")
     private void processAttributes(PathAddress address, ImmutableManagementResourceRegistration rootRegistration, OperationEntry operationEntry, Map<String, Object> map, List<ParsedBootOp> postExtensionOps) {
-        ModelNode op = new ModelNode();
         Set<AttributeDefinition> attributes = new HashSet<>();
         for (AttributeAccess attributeAccess : rootRegistration.getAttributes(address).values()) {
             if (attributeAccess.getStorageType() == AttributeAccess.Storage.CONFIGURATION) {
@@ -230,8 +233,7 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
             }
         }
         attributes.addAll(Arrays.asList(operationEntry.getOperationDefinition().getParameters()));
-        op.get(OP).set(operationEntry.getOperationDefinition().getName());
-        op.get(OP_ADDR).set(address.toModelNode());
+        ModelNode op = createOperation(address, operationEntry);
         for (AttributeDefinition att : attributes) {
             if (map.containsKey(att.getName())) {
                 Object value = map.get(att.getName());
@@ -253,6 +255,13 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
         ParsedBootOp operation = new ParsedBootOp(op, operationEntry.getOperationHandler());
         MGMT_OP_LOGGER.debugf("Adding resource with operation %s", op);
         postExtensionOps.add(operation);
+    }
+
+    private ModelNode createOperation(PathAddress address, OperationEntry operationEntry) {
+        ModelNode op = new ModelNode();
+        op.get(OP).set(operationEntry.getOperationDefinition().getName());
+        op.get(OP_ADDR).set(address.toModelNode());
+        return op;
     }
 
     @SuppressWarnings("unchecked")
@@ -283,10 +292,8 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
         AttributeDefinition type = att.getValueType();
         String attributeName = att.getName();
         for (Object entry : ((Iterable<? extends Object>) value)) {
-            ModelNode op = new ModelNode();
-                op.get(OP_ADDR).set(address.toModelNode());
-                op.get(NAME).set(attributeName);
-                        op.get(OP).set("list-add");
+            ModelNode op = createOperation(address, operationEntry);
+            op.get(NAME).set(attributeName);
             switch (type.getType()) {
                 case OBJECT:
                     Map<String, Object> map = (Map<String, Object>) entry;
