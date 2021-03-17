@@ -24,6 +24,8 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.UND
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.VALUE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.WRITE_ATTRIBUTE_OPERATION;
 import static org.jboss.as.controller.logging.ControllerLogger.MGMT_OP_LOGGER;
+import static org.jboss.dmr.ModelType.LIST;
+import static org.jboss.dmr.ModelType.OBJECT;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,6 +65,7 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
     private static final String CONFIGURATION_ROOT_KEY = "wildfly-bootable";
 
     private final List<Map<String, Object>> configs = new ArrayList<>();
+    private static final String[] EXCLUDED_ELEMENTS = {" deployment", "extension", "deployment-overlay"};
 
     @SuppressWarnings("unchecked")
     public YamlConfigurationExtension(Path... files) {
@@ -77,7 +80,11 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                 MGMT_OP_LOGGER.warn("Error parsing yaml file %s ", file.toString(), ioex);
             }
             if (yamlConfig.containsKey(CONFIGURATION_ROOT_KEY)) {
-                this.configs.add((Map<String, Object>) yamlConfig.get(CONFIGURATION_ROOT_KEY));
+                Map<String, Object> config = (Map<String, Object>) yamlConfig.get(CONFIGURATION_ROOT_KEY);
+                for(String excluded: EXCLUDED_ELEMENTS) {
+                    config.remove(excluded);
+                }
+                this.configs.add(config);
             }
         }
         }
