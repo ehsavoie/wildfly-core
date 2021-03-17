@@ -86,6 +86,7 @@ import org.jboss.as.controller.operations.global.ReadResourceHandler;
 import org.jboss.as.controller.persistence.ConfigurationExtension;
 import org.jboss.as.controller.persistence.ConfigurationPersistenceException;
 import org.jboss.as.controller.persistence.ConfigurationPersister;
+import org.jboss.as.controller.persistence.ConfigurationPersister.PersistenceResource;
 import org.jboss.as.controller.registry.DelegatingResource;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
@@ -530,7 +531,6 @@ class ModelControllerImpl implements ModelController {
                     postExtContext.addBootStep(parsedOp);
                 }
             }
-
             resultAction = postExtContext.executeOperation();
 
             if (!skipModelValidation && resultAction == OperationContext.ResultAction.KEEP && bootOperations.postExtensionOps != null) {
@@ -548,7 +548,18 @@ class ModelControllerImpl implements ModelController {
                 resultAction = validateContext.executeOperation();
             }
         }
-
+        if (configExtension != null && resultAction == OperationContext.ResultAction.KEEP) {//forcing the XML persistence after applying the YAML changes
+                try {
+                    this.persister.successfulBoot();
+                    Set<PathAddress> validateAddresses = new HashSet<>();
+                    Resource root = managementModel.get().getRootResource();
+                    addAllAddresses(managementModel.get().getRootResourceRegistration(), PathAddress.EMPTY_ADDRESS, root, validateAddresses);
+                    PersistenceResource resource = this.writeModel(managementModel.get(), validateAddresses, true, true, true);
+                    resource.commit();
+                } catch (ConfigurationPersistenceException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
         return  resultAction == OperationContext.ResultAction.KEEP;
     }
 

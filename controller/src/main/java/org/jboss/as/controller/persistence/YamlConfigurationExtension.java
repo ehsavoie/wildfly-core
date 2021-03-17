@@ -19,6 +19,8 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADD
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.NAME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.REMOVE;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.UNDEFINE_ATTRIBUTE_OPERATION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.VALUE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.WRITE_ATTRIBUTE_OPERATION;
 import static org.jboss.as.controller.logging.ControllerLogger.MGMT_OP_LOGGER;
@@ -47,6 +49,10 @@ import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.dmr.ModelNode;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.AbstractConstruct;
+import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.nodes.Node;
+import org.yaml.snakeyaml.nodes.Tag;
 
 /**
  *
@@ -65,7 +71,7 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
         if (file != null && Files.exists(file) && Files.isRegularFile(file)) {
             Map<String, Object> yamlConfig = Collections.emptyMap();
             try (InputStream inputStream = Files.newInputStream(file)) {
-                Yaml yaml = new Yaml();
+                Yaml yaml = new Yaml(new OperationConstructor());
                 yamlConfig = yaml.load(inputStream);
             } catch (IOException ioex) {
                 MGMT_OP_LOGGER.warn("Error parsing yaml file %s ", file.toString(), ioex);
@@ -93,7 +99,7 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
             }
         }
         for(Map<String, Object> config : configs) {
-        processResource(PathAddress.EMPTY_ADDRESS, new HashMap<>(config), context, rootRegistration, rootRegistration, xmlOperations, postExtensionOps, false);
+            processResource(PathAddress.EMPTY_ADDRESS, new HashMap<>(config), context, rootRegistration, rootRegistration, xmlOperations, postExtensionOps, false);
         }
     }
 
@@ -122,8 +128,19 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                     if( value == null && !isExistingResource(xmlOperations, address)) { //empty resource
                         OperationEntry operationEntry = rootRegistration.getOperationEntry(address, ADD);
                         processAttributes(address, rootRegistration, operationEntry, Collections.emptyMap(), postExtensionOps);
+                    } else if (value != null && value instanceof Operation) {
+                        Operation yamlOperation = Operation.class.cast(value);
+                        if(isExistingResource(xmlOperations, address)) {
+                            postExtensionOps.add(yamlOperation.getOperation(rootRegistration, address, name));
+                        } else if (yamlOperation instanceof RemoveOperation) {
+                            //ignore
+                        } else {
+                            throw new RuntimeException("Can't undefine attribute " + name + " since there is no resource at " + address.toCLIStyleString());
+                        }
                     } else {
-                        MGMT_OP_LOGGER.warnf("You have defined a resource for address %s without any attributes, doing nothing", address.toCLIStyleString());
+                        if (!isExistingResource(xmlOperations, address)) {
+                            MGMT_OP_LOGGER.warnf("You have defined a resource for address %s without any attributes, doing nothing", address.toCLIStyleString());
+                        }
                     }
                 }
             } else {
@@ -137,7 +154,8 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                         Map<String, Object> map = (Map<String, Object>) value;
                         processResource(address, map, context, rootRegistration, rootRegistration.getSubModel(address), xmlOperations, postExtensionOps, false);
                     } else {
-                        MGMT_OP_LOGGER.warnf("You have defined a resource for address %s without any attributes, doing nothing", address.toCLIStyleString());
+                        //Ignoring
+//                        MGMT_OP_LOGGER.warnf("You have defined a resource for address %s without any attributes, doing nothing", address.toCLIStyleString());
                     }
                 } else {
                     if (resourceRegistration.getAttributeNames(PathAddress.EMPTY_ADDRESS).contains(name)) {
@@ -186,7 +204,7 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
     @SuppressWarnings("unchecked")
     private void processAttribute(PathAddress address, ImmutableManagementResourceRegistration rootRegistration, String attributeName, Object value, List<ParsedBootOp> postExtensionOps) {
         AttributeAccess attributeAccess = rootRegistration.getAttributeAccess(address, attributeName);
-        if (attributeAccess.getStorageType() == AttributeAccess.Storage.CONFIGURATION) {
+        if (attributeAccess.getStorageType() == AttributeAccess.Storage.CONFIGURATION && attributeAccess.getAccessType() == AttributeAccess.AccessType.READ_WRITE) {
             AttributeDefinition att = attributeAccess.getAttributeDefinition();
             if (att != null && !att.isResourceOnly()) {
                 switch (att.getType()) {
@@ -201,17 +219,26 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                     }
                         break;
                     case LIST: {
-                        OperationEntry operationEntry = rootRegistration.getOperationEntry(address, "list-add");
-                        processListElements((ListAttributeDefinition) att, postExtensionOps, operationEntry, address, value);
-                    }
-                        break;
-                    default: {
+                        /*OperationEntry operationEntry = rootRegistration.getOperationEntry(address, "list-add");
+                        processListElements((ListAttributeDefinition) att, postExtensionOps, operationEntry, address, value);*/
                         OperationEntry operationEntry = rootRegistration.getOperationEntry(address, WRITE_ATTRIBUTE_OPERATION);
                         ModelNode op = createOperation(address, operationEntry);
                         op.get(NAME).set(attributeName);
-                        op.get(VALUE).set(value.toString());
-                        MGMT_OP_LOGGER.debugf("Updating attribute %s for resource %s with operation %s", attributeName, address, op);
-                        postExtensionOps.add(new ParsedBootOp(op, operationEntry.getOperationHandler()));
+                        ModelNode list = op.get(VALUE).setEmptyList();
+                        processListAttribute((ListAttributeDefinition) att, list, value);
+                    }
+                        break;
+                    default: {
+                        if(value instanceof Operation) {
+                            postExtensionOps.add(((Operation) value).getOperation(rootRegistration, address, attributeName));
+                        } else {
+                            OperationEntry operationEntry = rootRegistration.getOperationEntry(address, WRITE_ATTRIBUTE_OPERATION);
+                            ModelNode op = createOperation(address, operationEntry);
+                            op.get(NAME).set(attributeName);
+                            op.get(VALUE).set(value.toString());
+                            MGMT_OP_LOGGER.debugf("Updating attribute %s for resource %s with operation %s", attributeName, address, op);
+                            postExtensionOps.add(new ParsedBootOp(op, operationEntry.getOperationHandler()));
+                        }
                     }
                         break;
                 }
@@ -288,41 +315,6 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
     }
 
     @SuppressWarnings("unchecked")
-    private void processListElements(ListAttributeDefinition att, List<ParsedBootOp> postExtensionOps, OperationEntry operationEntry, PathAddress address, Object value) {
-        AttributeDefinition type = att.getValueType();
-        String attributeName = att.getName();
-        for (Object entry : ((Iterable<? extends Object>) value)) {
-            ModelNode op = createOperation(address, operationEntry);
-            op.get(NAME).set(attributeName);
-            switch (type.getType()) {
-                case OBJECT:
-                    Map<String, Object> map = (Map<String, Object>) entry;
-                    if(map.containsKey("index")) {
-                        op.get("index").set((Integer)map.get("index"));
-                    }
-                    op.get(VALUE).set(processObjectAttribute((ObjectTypeAttributeDefinition) type, map));
-                    break;
-                case LIST:
-                default:
-                    if(entry instanceof Map) {
-                        Map<String, Object> indexedEntry = (Map<String, Object>) entry;
-                        op.get("index").set((Integer)indexedEntry.get("index"));
-                        indexedEntry.remove("index");
-                        for(Map.Entry<String, Object> realValue : indexedEntry.entrySet()) {
-                            op.get(VALUE).set(realValue.getValue().toString());
-                        }
-                    } else {
-                    op.get(VALUE).set(entry.toString());
-                    }
-                    break;
-            }
-                    ParsedBootOp operation = new ParsedBootOp(op, operationEntry.getOperationHandler());
-                    MGMT_OP_LOGGER.debugf("Updating attribute %s for resource %s with operation %s", attributeName, address, op);
-                    postExtensionOps.add(operation);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
     private void processListAttribute(ListAttributeDefinition att, ModelNode list, Object value) {
         AttributeDefinition type = att.getValueType();
         for (Object entry : ((Iterable<? extends Object>) value)) {
@@ -334,6 +326,60 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                 default:
                     list.add(entry.toString());
                     break;
+            }
+        }
+    }
+
+    interface Operation {
+        ParsedBootOp getOperation(ImmutableManagementResourceRegistration rootRegistration, PathAddress address, String name);
+    }
+
+    class RemoveOperation implements Operation {
+
+        RemoveOperation() {
+        }
+
+        @Override
+        public ParsedBootOp getOperation(ImmutableManagementResourceRegistration rootRegistration, PathAddress address, String name) {
+            OperationEntry operationEntry = rootRegistration.getOperationEntry(address, REMOVE);
+            ModelNode op = new ModelNode();
+            op.get(OP).set(operationEntry.getOperationDefinition().getName());
+            op.get(OP_ADDR).set(address.toModelNode());
+            return new ParsedBootOp(op, operationEntry.getOperationHandler());
+        }
+    }
+
+    class UndefineOperation implements Operation {
+
+         UndefineOperation() {
+        }
+
+        @Override
+        public ParsedBootOp getOperation(ImmutableManagementResourceRegistration rootRegistration, PathAddress address, String name) {
+            OperationEntry operationEntry = rootRegistration.getOperationEntry(address, UNDEFINE_ATTRIBUTE_OPERATION);
+            ModelNode op = new ModelNode();
+            op.get(OP).set(operationEntry.getOperationDefinition().getName());
+            op.get(OP_ADDR).set(address.toModelNode());
+            op.get(NAME).set(name);
+            return new ParsedBootOp(op, operationEntry.getOperationHandler());
+        }
+    }
+
+    class OperationConstructor extends Constructor {
+        public OperationConstructor() {
+            this.yamlConstructors.put(new Tag("!remove"), new ConstructRemoveOperation());
+            this.yamlConstructors.put(new Tag("!undefine"), new ConstructUndefineOperation());
+        }
+
+        private class ConstructRemoveOperation extends AbstractConstruct {
+            public Object construct(Node node) {
+                return new RemoveOperation();
+            }
+        }
+
+        private class ConstructUndefineOperation extends AbstractConstruct {
+            public Object construct(Node node) {
+                return new UndefineOperation();
             }
         }
     }
