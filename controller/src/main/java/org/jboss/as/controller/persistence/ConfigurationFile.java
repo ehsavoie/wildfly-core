@@ -135,6 +135,7 @@ public class ConfigurationFile {
        May be used as {@link #bootFile}; see {@link #reloadUsingLast} */
     private volatile File lastFile;
     private final boolean useGit;
+    private final ConfigurationExtension configurationExtension;
 
     /**
      * Creates a new ConfigurationFile.
@@ -149,7 +150,7 @@ public class ConfigurationFile {
      *                                    to the configuration history directory
      */
     public ConfigurationFile(final File configurationDir, final String rawName, final String name, final boolean persistOriginal) {
-        this(configurationDir, rawName, name, persistOriginal ? InteractionPolicy.STANDARD : InteractionPolicy.READ_ONLY, false);
+        this(configurationDir, rawName, name, persistOriginal ? InteractionPolicy.STANDARD : InteractionPolicy.READ_ONLY, false, null, (ConfigurationExtension) null);
     }
 
     /**
@@ -162,9 +163,11 @@ public class ConfigurationFile {
      * @param name              user provided name of the configuration file to use
      * @param interactionPolicy policy governing interaction with the configuration file.
      * @param useGit            {@code true} if configuration is using Git to manage its history.
+     * @param configurationExtension extra configuration.
      */
-    public ConfigurationFile(final File configurationDir, final String rawName, final String name, final InteractionPolicy interactionPolicy, final boolean useGit) {
-        this(configurationDir, rawName, name, interactionPolicy, useGit, null);
+    public ConfigurationFile(final File configurationDir, final String rawName, final String name, final InteractionPolicy interactionPolicy,
+            final boolean useGit, final ConfigurationExtension configurationExtension) {
+        this(configurationDir, rawName, name, interactionPolicy, useGit, null, configurationExtension);
     }
 
     /**
@@ -179,9 +182,11 @@ public class ConfigurationFile {
      * @param useGit            {@code true} if configuration is using Git to manage its history.
      * @param tmpDir            The server temporary directory to use as a fallback if the configuration directory cannot
      *                          be written and we are running on read only mode.
+     * @param configurationExtension extra configuration.
      */
     public ConfigurationFile(final File configurationDir, final String rawName, final String name,
-                             final InteractionPolicy interactionPolicy, final boolean useGit, final File tmpDir) {
+                             final InteractionPolicy interactionPolicy, final boolean useGit, final File tmpDir,
+                             final ConfigurationExtension configurationExtension) {
         if (!configurationDir.exists() || !configurationDir.isDirectory()) {
             throw ControllerLogger.ROOT_LOGGER.directoryNotFound(configurationDir.getAbsolutePath());
         }
@@ -190,6 +195,7 @@ public class ConfigurationFile {
         this.bootFileName = name != null ? name : rawName;
         this.configurationDir = configurationDir;
         this.serverTempDir = tmpDir;
+        this.configurationExtension = configurationExtension;
         this.interactionPolicy = interactionPolicy == null ? InteractionPolicy.STANDARD : interactionPolicy;
         // If we are in a read only policy and the configurationDir cannot be written, then we use the tmpDir for temporal files and history
         this.historyRoot = new File(tmpDir != null && this.interactionPolicy.isReadOnly() && !configurationDir.canWrite() ? tmpDir : configurationDir,
@@ -305,6 +311,10 @@ public class ConfigurationFile {
             }
         }
         return bootFile;
+    }
+
+    public ConfigurationExtension getConfigurationExtension() {
+        return configurationExtension;
     }
 
     public InteractionPolicy getInteractionPolicy() {
