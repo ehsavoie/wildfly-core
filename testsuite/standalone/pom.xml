@@ -189,6 +189,7 @@
                                         </config>
                                     </included-configs>
                                     <excluded-packages>
+                                        <name>banner</name>
                                         <name>product.conf</name>
                                     </excluded-packages>
                                 </feature-pack>
@@ -272,6 +273,7 @@
                                                 <name>org.jboss.as.patching.cli</name>
                                             </included-packages>
                                             <excluded-packages>
+                                                <name>banner</name>
                                                 <name>product.conf</name>
                                             </excluded-packages>
                                         </feature-pack>
@@ -378,6 +380,7 @@
                                                 <name>org.jboss.as.patching.cli</name>
                                             </included-packages>
                                             <excluded-packages>
+                                                <name>banner</name>
                                                 <name>product.conf</name>
                                             </excluded-packages>
                                         </feature-pack>
