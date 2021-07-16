@@ -15,22 +15,21 @@
  */
 package org.jboss.as.controller.persistence;
 
-
 import java.nio.file.Path;
-import java.util.List;
-import org.jboss.as.controller.ParsedBootOp;
-import org.jboss.as.controller.RunningMode;
-import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
+import java.util.Optional;
+import java.util.ServiceLoader;
 
 /**
- * Interface for extensions of the XML boot configuration.
+ *
  * @author Emmanuel Hugonnet (c) 2021 Red Hat, Inc.
  */
-public interface ConfigurationExtension {
-
-    ConfigurationExtension load(Path... files);
-
-    boolean shouldProcessOperations(RunningMode mode);
-
-    void processOperations(ImmutableManagementResourceRegistration rootRegistration, List<ParsedBootOp> postExtensionOps);
+public class ConfigurationExtensionFactory {
+    public static ConfigurationExtension createConfigurationExtension(Path... files) {
+        ServiceLoader<ConfigurationExtension> loader = ServiceLoader.load(ConfigurationExtension.class);
+        Optional<ConfigurationExtension> extension = loader.findFirst();
+        if(extension.isPresent() && files != null && files.length > 0) {
+            return extension.get().load(files);
+        }
+        return null;
+    }
 }
