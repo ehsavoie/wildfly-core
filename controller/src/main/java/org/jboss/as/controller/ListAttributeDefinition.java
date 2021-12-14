@@ -22,6 +22,8 @@
 
 package org.jboss.as.controller;
 
+import static org.jboss.as.controller.logging.ControllerLogger.ROOT_LOGGER;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -59,6 +61,14 @@ public abstract class ListAttributeDefinition extends AttributeDefinition {
     @SuppressWarnings("WeakerAccess")
     public ParameterValidator getElementValidator() {
         return elementValidator;
+    }
+
+    /**
+     * Returns an AttributeDefinition describing the content of the list.
+     * @return an AttributeDefinition describing the content of the list.
+     */
+    public AttributeDefinition getValueAttributeDefinition() {
+        throw ROOT_LOGGER.missingListAttributeValueType(getName());
     }
 
     /**

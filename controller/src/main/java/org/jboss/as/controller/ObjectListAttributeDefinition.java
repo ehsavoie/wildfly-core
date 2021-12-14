@@ -174,6 +174,10 @@ public class ObjectListAttributeDefinition extends ListAttributeDefinition {
     }
 
     public final ObjectTypeAttributeDefinition getValueType() {
+        return getValueAttributeDefinition();
+    }
+
+    public final ObjectTypeAttributeDefinition getValueAttributeDefinition() {
         return valueType;
     }
 

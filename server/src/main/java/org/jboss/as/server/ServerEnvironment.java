@@ -25,13 +25,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -43,6 +47,8 @@ import org.jboss.as.controller.audit.ManagedAuditLogger;
 import org.jboss.as.controller.audit.ManagedAuditLoggerImpl;
 import org.jboss.as.controller.interfaces.InetAddressUtil;
 import org.jboss.as.controller.operations.common.ProcessEnvironment;
+import org.jboss.as.controller.persistence.ConfigurationExtension;
+import org.jboss.as.controller.persistence.ConfigurationExtensionFactory;
 import org.jboss.as.controller.persistence.ConfigurationFile;
 import org.jboss.as.network.NetworkUtils;
 import org.jboss.as.server.controller.git.GitRepository;
@@ -332,7 +338,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
                              final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
                              final RunningMode initialRunningMode, ProductConfig productConfig, boolean startSuspended) {
         this(hostControllerName, props, env, serverConfig, configInteractionPolicy, launchType, initialRunningMode, productConfig,
-                System.currentTimeMillis(), startSuspended, null, null, null);
+                System.currentTimeMillis(), startSuspended, null, null, null, null);
     }
 
     @Deprecated
@@ -340,32 +346,34 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
                              final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
                              final RunningMode initialRunningMode, ProductConfig productConfig) {
         this(hostControllerName, props, env, serverConfig, configInteractionPolicy, launchType, initialRunningMode, productConfig,
-                System.currentTimeMillis(), false, null, null, null);
+                System.currentTimeMillis(), false, null, null, null, null);
     }
 
     @Deprecated
     public ServerEnvironment(final String hostControllerName, final Properties props, final Map<String, String> env, final String serverConfig,
                              final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
-                             final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, String gitRepository, String gitBranch, String gitAuthConfiguration) {
+                             final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, String gitRepository,
+                             String gitBranch, String gitAuthConfiguration, String supplementalConfiguration) {
         this(hostControllerName, props, env, serverConfig, configInteractionPolicy, launchType, initialRunningMode, productConfig,
-                startTime, false, gitRepository, gitBranch, gitAuthConfiguration);
+                startTime, false, gitRepository, gitBranch, gitAuthConfiguration, supplementalConfiguration);
     }
 
     @Deprecated
     public ServerEnvironment(final String hostControllerName, final Properties props, final Map<String, String> env, final String serverConfig,
                              final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
                              final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, boolean startSuspended,
-                             String gitRepository, String gitBranch, String gitAuthConfiguration) {
+                             String gitRepository, String gitBranch, String gitAuthConfiguration, String supplementalConfiguration) {
         this(hostControllerName, props, env, serverConfig, configInteractionPolicy, launchType, initialRunningMode,
-                productConfig, startTime, startSuspended, false, gitRepository, gitBranch, gitAuthConfiguration);
+                productConfig, startTime, startSuspended, false, gitRepository, gitBranch, gitAuthConfiguration, supplementalConfiguration);
     }
 
     public ServerEnvironment(final String hostControllerName, final Properties props, final Map<String, String> env, final String serverConfig,
-                             final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
+                             final ConfigurationFile.InteractionPolicy configurationInteractionPolicy, final LaunchType launchType,
                              final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, boolean startSuspended,
-                             final boolean startGracefully, final String gitRepository, final String gitBranch, final String gitAuthConfiguration) {
+                             final boolean startGracefully, final String gitRepository, final String gitBranch, final String gitAuthConfiguration,
+                             final String supplementalConfiguration) {
         assert props != null;
-
+        ConfigurationFile.InteractionPolicy configInteractionPolicy = configurationInteractionPolicy;
         this.startSuspended = startSuspended;
         this.startGracefully = startGracefully;
 
@@ -391,6 +399,11 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
         javaExtDirs = getFilesFromProperty(JAVA_EXT_DIRS, props);
 
         if ( launchType.equals( LaunchType.SELF_CONTAINED ) ) {
+            Path[] supplementalConfigurationFiles = findSupplementalConfigurationFiles(null, supplementalConfiguration);
+            ConfigurationExtension configurationExtension = ConfigurationExtensionFactory.createConfigurationExtension(supplementalConfigurationFiles);
+            if (configurationExtension != null) {
+                configInteractionPolicy = configurationExtension.shouldProcessOperations(initialRunningMode) ? ConfigurationFile.InteractionPolicy.READ_ONLY : configInteractionPolicy;
+            }
             homeDir = new File(WildFlySecurityManager.getPropertyPrivileged("user.dir", "."));
             serverBaseDir = new File(WildFlySecurityManager.getPropertyPrivileged("user.dir", "."));
             serverLogDir = new File(WildFlySecurityManager.getPropertyPrivileged("user.dir", "."));
@@ -459,6 +472,12 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
             serverConfigurationDir = tmp;
             if (standalone && (!serverConfigurationDir.exists() || !serverConfigurationDir.isDirectory())) {
                 throw ServerLogger.ROOT_LOGGER.configDirectoryDoesNotExist(serverConfigurationDir);
+            }
+
+            Path[] supplementalConfigurationFiles = findSupplementalConfigurationFiles(serverConfigurationDir.toPath(), supplementalConfiguration);
+            ConfigurationExtension configurationExtension = ConfigurationExtensionFactory.createConfigurationExtension(supplementalConfigurationFiles);
+            if (configurationExtension != null) {
+                configInteractionPolicy = configurationExtension.shouldProcessOperations(initialRunningMode) ? ConfigurationFile.InteractionPolicy.READ_ONLY : configInteractionPolicy;
             }
 
             tmp = getFileFromProperty(SERVER_DATA_DIR, props);
@@ -548,7 +567,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
             } else {
                 repository = null;
             }
-            serverConfigurationFile = standalone ? new ConfigurationFile(serverConfigurationDir, defaultServerConfig, serverConfig, configInteractionPolicy, repository != null, serverTempDir) : null;
+            serverConfigurationFile = standalone ? new ConfigurationFile(serverConfigurationDir, defaultServerConfig, serverConfig, configInteractionPolicy, repository != null, serverTempDir, configurationExtension) : null;
             // Adds a system property to indicate whether or not the server configuration should be persisted
             @SuppressWarnings("deprecation")
             final String propertyKey = JBOSS_PERSIST_SERVER_CONFIG;
@@ -668,7 +687,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
 
     private void setUnignored(Set<String> ignored, Path path, boolean dir) {
         final Path serverBasePath = serverBaseDir.toPath();
-        if(path.startsWith(serverBasePath)) {
+        if (path.startsWith(serverBasePath)) {
             ignored.add("!" + serverBasePath.relativize(path).toString().replace('\\', '/'));
         }
     }
@@ -690,6 +709,30 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
                 }
             }
         }
+    }
+
+    private Path[] findSupplementalConfigurationFiles(final Path serverConfigurationDirPath, String yaml) {
+        List<Path> yamlPaths = new ArrayList<>();
+        StringJoiner joiner = new StringJoiner(", ");
+        boolean error = false;
+        if (yaml != null && !yaml.isEmpty()) {
+            for (String yamlFile : yaml.split(File.pathSeparator)) {
+                Path yamlPath = new File(yamlFile).toPath();
+                if(!yamlPath.isAbsolute() && serverConfigurationDirPath != null) {
+                    yamlPath = serverConfigurationDirPath.resolve(yamlPath);
+                }
+                if (Files.exists(yamlPath) && Files.isRegularFile(yamlPath)) {
+                    yamlPaths.add(yamlPath);
+                } else {
+                    error = true;
+                    joiner.add('\'' + yamlFile + '\'');
+                }
+            }
+        }
+        if(error) {
+            throw ServerLogger.ROOT_LOGGER.unableToFindYaml(joiner.toString());
+        }
+        return yamlPaths.toArray(new Path[yamlPaths.size()]);
     }
 
     void resetProvidedProperties() {
@@ -1134,6 +1177,10 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
 
     public GitRepository getGitRepository() {
         return repository;
+    }
+
+    public ConfigurationExtension getConfigurationExtension() {
+        return this.getServerConfigurationFile() != null ? this.getServerConfigurationFile().getConfigurationExtension() : null;
     }
 
     /**
