@@ -27,7 +27,6 @@ import java.io.Serializable;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -740,7 +739,6 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
             for (String yamlFile : yaml.split(File.pathSeparator)) {
                 Path yamlPath = new File(yamlFile).toPath();
                 if (!yamlPath.isAbsolute()) {
-                    yamlPath = Paths.get(yaml);
                     if (Files.exists(yamlPath) && Files.isRegularFile(yamlPath)) {
                         yamlPaths.add(yamlPath);
                     } else if (serverConfigurationDirPath != null) {
