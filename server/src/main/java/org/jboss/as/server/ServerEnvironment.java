@@ -27,6 +27,7 @@ import java.io.Serializable;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -71,17 +72,29 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
 
     private static final long serialVersionUID = 1725061010357265545L;
 
-    /** The manner in which a server can be launched */
+    /**
+     * The manner in which a server can be launched
+     */
     public static enum LaunchType {
-        /** Launched by a Host Controller in a managed domain */
+        /**
+         * Launched by a Host Controller in a managed domain
+         */
         DOMAIN(ProcessType.DOMAIN_SERVER),
-        /** Launched from the command line */
+        /**
+         * Launched from the command line
+         */
         STANDALONE(ProcessType.STANDALONE_SERVER),
-        /** Launched by another process in which the server is embedded */
+        /**
+         * Launched by another process in which the server is embedded
+         */
         EMBEDDED(ProcessType.EMBEDDED_SERVER),
-        /** Launched as self-contained WildFly Swarm server */
+        /**
+         * Launched as self-contained WildFly Swarm server
+         */
         SELF_CONTAINED(ProcessType.SELF_CONTAINED),
-        /** Launched by a Java EE appclient */
+        /**
+         * Launched by a Java EE appclient
+         */
         APPCLIENT(ProcessType.APPLICATION_CLIENT);
 
         private final ProcessType processType;
@@ -98,14 +111,14 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     // ///////////////////////////////////////////////////////////////////////
     // Configuration Value Identifiers //
     // ///////////////////////////////////////////////////////////////////////
-
     /**
      * Constant that holds the name of the system property for specifying the JDK extension directory paths.
      */
     public static final String JAVA_EXT_DIRS = "java.ext.dirs";
 
     /**
-     * Constant that holds the name of the system property for specifying {@link #getHomeDir() the JBoss home directory}.
+     * Constant that holds the name of the system property for specifying
+     * {@link #getHomeDir() the JBoss home directory}.
      */
     public static final String HOME_DIR = "jboss.home.dir";
 
@@ -126,13 +139,14 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
      * system should use the APIs provided by JBoss Modules
      *
      *
-     * @deprecated  has no useful meaning
+     * @deprecated has no useful meaning
      */
     @Deprecated
     public static final String MODULES_DIR = "jboss.modules.dir";
 
     /**
-     * Constant that holds the name of the system property for specifying {@link #getBundlesDir() the bundles directory}.
+     * Constant that holds the name of the system property for specifying
+     * {@link #getBundlesDir() the bundles directory}.
      *
      * <p>
      * Defaults to <tt><em>HOME_DIR</em>/bundles</tt>/
@@ -235,7 +249,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     public static final String QUALIFIED_HOST_NAME = "jboss.qualified.host.name";
 
     /**
-     * Constant that holds the name of the system property for specifying the max threads used by the bootstrap ServiceContainer.
+     * Constant that holds the name of the system property for specifying the max threads used by the bootstrap
+     * ServiceContainer.
      */
     public static final String BOOTSTRAP_MAX_THREADS = "org.jboss.server.bootstrap.maxThreads";
 
@@ -281,23 +296,31 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     public static final String DOMAIN_BASE_DIR = "jboss.domain.base.dir";
     public static final String DOMAIN_CONFIG_DIR = "jboss.domain.config.dir";
 
-    /** Properties that cannot be set via {@link #systemPropertyUpdated(String, String)} */
+    /**
+     * Properties that cannot be set via {@link #systemPropertyUpdated(String, String)}
+     */
     private static final Set<String> ILLEGAL_PROPERTIES = new HashSet<String>(Arrays.asList(DOMAIN_BASE_DIR,
             DOMAIN_CONFIG_DIR, JAVA_EXT_DIRS, HOME_DIR, "modules.path", SERVER_BASE_DIR, SERVER_CONFIG_DIR,
             SERVER_DATA_DIR, SERVER_DEPLOY_DIR, SERVER_LOG_DIR, BOOTSTRAP_MAX_THREADS, CONTROLLER_TEMP_DIR,
             JBOSS_SERVER_DEFAULT_CONFIG, JBOSS_PERSIST_SERVER_CONFIG, JBOSS_SERVER_MANAGEMENT_UUID));
-    /** Properties that can only be set via {@link #systemPropertyUpdated(String, String)} during server boot. */
+    /**
+     * Properties that can only be set via {@link #systemPropertyUpdated(String, String)} during server boot.
+     */
     private static final Set<String> BOOT_PROPERTIES = new HashSet<String>(Arrays.asList(BUNDLES_DIR, SERVER_TEMP_DIR,
             NODE_NAME, SERVER_NAME, HOST_NAME, QUALIFIED_HOST_NAME));
 
-    /** Properties that we care about that were provided to the constructor (i.e. by the user via cmd line) */
+    /**
+     * Properties that we care about that were provided to the constructor (i.e. by the user via cmd line)
+     */
     private final Properties primordialProperties;
     /**
      * Properties that we care about that have been provided by the user either via cmd line or
      * via {@link #systemPropertyUpdated(String, String)}
      */
     private final Properties providedProperties;
-    /** Whether the server name has been provided via {@link #setProcessName(String)} */
+    /**
+     * Whether the server name has been provided via {@link #setProcessName(String)}
+     */
     private volatile boolean processNameSet;
 
     private final LaunchType launchType;
@@ -335,43 +358,43 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     private GitRepository repository;
 
     public ServerEnvironment(final String hostControllerName, final Properties props, final Map<String, String> env, final String serverConfig,
-                             final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
-                             final RunningMode initialRunningMode, ProductConfig productConfig, boolean startSuspended) {
+            final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
+            final RunningMode initialRunningMode, ProductConfig productConfig, boolean startSuspended) {
         this(hostControllerName, props, env, serverConfig, configInteractionPolicy, launchType, initialRunningMode, productConfig,
                 System.currentTimeMillis(), startSuspended, null, null, null, null);
     }
 
     @Deprecated
     public ServerEnvironment(final String hostControllerName, final Properties props, final Map<String, String> env, final String serverConfig,
-                             final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
-                             final RunningMode initialRunningMode, ProductConfig productConfig) {
+            final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
+            final RunningMode initialRunningMode, ProductConfig productConfig) {
         this(hostControllerName, props, env, serverConfig, configInteractionPolicy, launchType, initialRunningMode, productConfig,
                 System.currentTimeMillis(), false, null, null, null, null);
     }
 
     @Deprecated
     public ServerEnvironment(final String hostControllerName, final Properties props, final Map<String, String> env, final String serverConfig,
-                             final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
-                             final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, String gitRepository,
-                             String gitBranch, String gitAuthConfiguration, String supplementalConfiguration) {
+            final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
+            final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, String gitRepository,
+            String gitBranch, String gitAuthConfiguration, String supplementalConfiguration) {
         this(hostControllerName, props, env, serverConfig, configInteractionPolicy, launchType, initialRunningMode, productConfig,
                 startTime, false, gitRepository, gitBranch, gitAuthConfiguration, supplementalConfiguration);
     }
 
     @Deprecated
     public ServerEnvironment(final String hostControllerName, final Properties props, final Map<String, String> env, final String serverConfig,
-                             final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
-                             final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, boolean startSuspended,
-                             String gitRepository, String gitBranch, String gitAuthConfiguration, String supplementalConfiguration) {
+            final ConfigurationFile.InteractionPolicy configInteractionPolicy, final LaunchType launchType,
+            final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, boolean startSuspended,
+            String gitRepository, String gitBranch, String gitAuthConfiguration, String supplementalConfiguration) {
         this(hostControllerName, props, env, serverConfig, configInteractionPolicy, launchType, initialRunningMode,
                 productConfig, startTime, startSuspended, false, gitRepository, gitBranch, gitAuthConfiguration, supplementalConfiguration);
     }
 
     public ServerEnvironment(final String hostControllerName, final Properties props, final Map<String, String> env, final String serverConfig,
-                             final ConfigurationFile.InteractionPolicy configurationInteractionPolicy, final LaunchType launchType,
-                             final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, boolean startSuspended,
-                             final boolean startGracefully, final String gitRepository, final String gitBranch, final String gitAuthConfiguration,
-                             final String supplementalConfiguration) {
+            final ConfigurationFile.InteractionPolicy configurationInteractionPolicy, final LaunchType launchType,
+            final RunningMode initialRunningMode, ProductConfig productConfig, long startTime, boolean startSuspended,
+            final boolean startGracefully, final String gitRepository, final String gitBranch, final String gitAuthConfiguration,
+            final String supplementalConfiguration) {
         assert props != null;
         ConfigurationFile.InteractionPolicy configInteractionPolicy = configurationInteractionPolicy;
         this.startSuspended = startSuspended;
@@ -398,7 +421,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
         // Java system-wide extension dirs
         javaExtDirs = getFilesFromProperty(JAVA_EXT_DIRS, props);
 
-        if ( launchType.equals( LaunchType.SELF_CONTAINED ) ) {
+        if (launchType.equals(LaunchType.SELF_CONTAINED)) {
             Path[] supplementalConfigurationFiles = findSupplementalConfigurationFiles(null, supplementalConfiguration);
             ConfigurationExtension configurationExtension = ConfigurationExtensionFactory.createConfigurationExtension(supplementalConfigurationFiles);
             if (configurationExtension != null) {
@@ -408,9 +431,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
             serverBaseDir = new File(WildFlySecurityManager.getPropertyPrivileged("user.dir", "."));
             serverLogDir = new File(WildFlySecurityManager.getPropertyPrivileged("user.dir", "."));
 
-
             String serverDirProp = props.getProperty(SERVER_TEMP_DIR);
-            if(null==serverDirProp) {
+            if (null == serverDirProp) {
                 throw ServerLogger.ROOT_LOGGER.requiredSystemPropertyMissing(SERVER_TEMP_DIR);
             }
             serverTempDir = new File(serverDirProp);
@@ -513,7 +535,6 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
                 throw ServerLogger.ROOT_LOGGER.couldNotCreateServerContentDirectory(serverContentDir);
             }
 
-
             tmp = getFileFromProperty(SERVER_LOG_DIR, props);
             if (tmp == null) {
                 tmp = new File(serverBaseDir, "log");
@@ -557,10 +578,10 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
                     .setRepository(gitRepository)
                     .setIgnored(listIgnoredFiles(defaultServerConfig))
                     .build();
-            if (gitConfiguration != null ) {
+            if (gitConfiguration != null) {
                 try {
                     repository = new GitRepository(gitConfiguration);
-                } catch(Exception ex) {
+                } catch (Exception ex) {
                     ServerLogger.ROOT_LOGGER.errorUsingGit(ex, ex.getMessage());
                     throw ServerLogger.ROOT_LOGGER.unableToInitialiseGitRepository(ex);
                 }
@@ -600,7 +621,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
                 Integer.decode(maxThreads);
                 // Property was set to a valid value; user wishes to control core service threads
                 allowExecutor = false;
-            } catch(NumberFormatException ex) {
+            } catch (NumberFormatException ex) {
                 ServerLogger.ROOT_LOGGER.failedToParseCommandLineInteger(BOOTSTRAP_MAX_THREADS, maxThreads);
             }
         }
@@ -610,7 +631,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
         try {
             String sysPropUUID = props.getProperty(JBOSS_SERVER_MANAGEMENT_UUID);
             uuid = obtainProcessUUID(filePath, sysPropUUID);
-        } catch(IOException ex) {
+        } catch (IOException ex) {
             throw ServerLogger.ROOT_LOGGER.couldNotObtainServerUuidFile(ex, filePath);
         }
         this.serverUUID = uuid;
@@ -637,11 +658,11 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
         setPathProperty(SERVER_LOG_DIR, serverLogDir);
         setPathProperty(SERVER_TEMP_DIR, serverTempDir);
 
-        if(launchType.getProcessType() == ProcessType.DOMAIN_SERVER) {
-            if(domainBaseDir != null) {
+        if (launchType.getProcessType() == ProcessType.DOMAIN_SERVER) {
+            if (domainBaseDir != null) {
                 WildFlySecurityManager.setPropertyPrivileged(DOMAIN_BASE_DIR, domainBaseDir.getAbsolutePath());
             }
-            if(domainConfigurationDir != null) {
+            if (domainConfigurationDir != null) {
                 WildFlySecurityManager.setPropertyPrivileged(DOMAIN_CONFIG_DIR, domainConfigurationDir.getAbsolutePath());
             }
         }
@@ -718,10 +739,23 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
         if (yaml != null && !yaml.isEmpty()) {
             for (String yamlFile : yaml.split(File.pathSeparator)) {
                 Path yamlPath = new File(yamlFile).toPath();
-                if(!yamlPath.isAbsolute() && serverConfigurationDirPath != null) {
-                    yamlPath = serverConfigurationDirPath.resolve(yamlPath);
-                }
-                if (Files.exists(yamlPath) && Files.isRegularFile(yamlPath)) {
+                if (!yamlPath.isAbsolute()) {
+                    yamlPath = Paths.get(yaml);
+                    if (Files.exists(yamlPath) && Files.isRegularFile(yamlPath)) {
+                        yamlPaths.add(yamlPath);
+                    } else if (serverConfigurationDirPath != null) {
+                        yamlPath = serverConfigurationDirPath.resolve(yamlFile);
+                        if (Files.exists(yamlPath) && Files.isRegularFile(yamlPath)) {
+                            yamlPaths.add(yamlPath);
+                        } else {
+                            error = true;
+                            joiner.add('\'' + yamlFile + '\'');
+                        }
+                    } else {
+                        error = true;
+                        joiner.add('\'' + yamlFile + '\'');
+                    }
+                } else if (Files.exists(yamlPath) && Files.isRegularFile(yamlPath)) {
                     yamlPaths.add(yamlPath);
                 } else {
                     error = true;
@@ -729,7 +763,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
                 }
             }
         }
-        if(error) {
+        if (error) {
             throw ServerLogger.ROOT_LOGGER.unableToFindYaml(joiner.toString());
         }
         return yamlPaths.toArray(new Path[yamlPaths.size()]);
@@ -743,11 +777,13 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     }
 
     /**
-     * Get the name of this server's host controller. For domain-mode servers, this is the name given in the domain configuration. For
+     * Get the name of this server's host controller. For domain-mode servers, this is the name given in the domain
+     * configuration. For
      * standalone servers, which do not utilize a host controller, the value should be <code>null</code>.
      *
-     * @return server's host controller name if the instance is running in domain mode, or <code>null</code> if running in standalone
-     *         mode
+     * @return server's host controller name if the instance is running in domain mode, or <code>null</code> if running
+     * in standalone
+     * mode
      */
     @Override
     public String getHostControllerName() {
@@ -755,8 +791,10 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     }
 
     /**
-     * Get the name of this server instance. For domain-mode servers, this is the name given in the domain configuration. For
-     * standalone servers, this is the name either provided in the server configuration, or, if not given, the name specified
+     * Get the name of this server instance. For domain-mode servers, this is the name given in the domain
+     * configuration. For
+     * standalone servers, this is the name either provided in the server configuration, or, if not given, the name
+     * specified
      * via {@link #SERVER_NAME system property}, or auto-detected based on {@link #getHostName()} host name}.
      *
      * @return the server name
@@ -790,8 +828,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     }
 
     private void configureQualifiedHostName(String qualifiedHostName, String providedHostName,
-                                            Properties providedProperties,
-                                            Map<String, String> env) {
+            Properties providedProperties,
+            Map<String, String> env) {
         if (qualifiedHostName == null) {
             // if host name is specified, don't pick a qualified host name that isn't related to it
             qualifiedHostName = providedHostName;
@@ -895,7 +933,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     /**
      * <strong>A filesystem location that has no real meaning and should not be regarded as providing any sort of useful
      * information.</strong> The "modules" directory is the default location from which JBoss Modules looks to find
-     * modules. However, this behavior is in no way controlled by the value returned by this method, nor is it guaranteed that
+     * modules. However, this behavior is in no way controlled by the value returned by this method, nor is it
+     * guaranteed that
      * modules will be loaded from only one directory, nor is it guaranteed that the "modules" directory will be one
      * of the directories used. Finally, the structure and contents of any directories from which JBoss Modules loads
      * resources is not something available from this class. Users wishing to interact with the modular classloading
@@ -913,7 +952,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     /**
      * Gets the directory under which OSGi bundles should be located.
      *
-     * <p>Defaults to {@link #getHomeDir() homeDir}/bundles</p>
+     * <p>
+     * Defaults to {@link #getHomeDir() homeDir}/bundles</p>
      *
      * @return the bundles directory
      */
@@ -939,7 +979,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     /**
      * Gets the based directory for this server.
      *
-     * <p>Defaults to <tt>{@link #getHomeDir() homeDir}/standalone</tt> for a standalone server or
+     * <p>
+     * Defaults to <tt>{@link #getHomeDir() homeDir}/standalone</tt> for a standalone server or
      * <tt>domain/servers/<server-name></tt> for a managed domain server.</p>
      *
      * @return the base directory for the server
@@ -950,7 +991,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
 
     /**
      * Gets the directory in which server configuration files are stored.
-     * <p>Defaults to {@link #getServerBaseDir()}  serverBaseDir}/configuration</p>
+     * <p>
+     * Defaults to {@link #getServerBaseDir()} serverBaseDir}/configuration</p>
      *
      * @return the server configuration directory.
      */
@@ -970,7 +1012,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     /**
      * Gets the directory in which the server can store private internal state that
      * should survive a process restart.
-     * <p>Defaults to {@link #getServerBaseDir()}  serverBaseDir}/data</p>
+     * <p>
+     * Defaults to {@link #getServerBaseDir()} serverBaseDir}/data</p>
      *
      * @return the internal state persistent storage directory
      */
@@ -981,7 +1024,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     /**
      * Gets the directory in which the server will store server-managed user content (e.g. deployments.)
      *
-     * <p>Defaults to {@link #getServerDataDir()}  serverDataDir}/content</p>
+     * <p>
+     * Defaults to {@link #getServerDataDir()} serverDataDir}/content</p>
      *
      * @return the domain managed content storage directory
      */
@@ -991,6 +1035,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
 
     /**
      * Deprecated previous name for {@link #getServerContentDir()}.
+     *
      * @return the server managed content storage directory.
      *
      * @deprecated use {@link #getServerContentDir()}
@@ -1002,7 +1047,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
 
     /**
      * Gets the directory in which the server can write log files.
-     * <p>Defaults to {@link #getServerBaseDir()}  serverBaseDir}/log</p>
+     * <p>
+     * Defaults to {@link #getServerBaseDir()} serverBaseDir}/log</p>
      *
      * @return the log file directory for the server.
      */
@@ -1013,7 +1059,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     /**
      * Gets the directory in which athe server can store private internal state that
      * does not need to survive a process restart.
-     * <p>Defaults to {@link #getServerBaseDir()}  serverBaseDir}/tmp</p>
+     * <p>
+     * Defaults to {@link #getServerBaseDir()} serverBaseDir}/tmp</p>
      *
      * @return the internal state temporary storage directory for the server.
      */
@@ -1082,7 +1129,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
 
     /**
      * Gets the base directory in which managed domain files are stored.
-     * <p>Defaults to {@link #getHomeDir() JBOSS_HOME}/domain</p>
+     * <p>
+     * Defaults to {@link #getHomeDir() JBOSS_HOME}/domain</p>
      *
      * @return the domain base directory, or {@code null} if this server is not running in a managed domain.
      */
@@ -1092,7 +1140,8 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
 
     /**
      * Gets the directory in which managed domain configuration files are stored.
-     * <p>Defaults to {@link #getDomainBaseDir()}  domainBaseDir}/configuration</p>
+     * <p>
+     * Defaults to {@link #getDomainBaseDir()} domainBaseDir}/configuration</p>
      *
      * @return the domain configuration directory, or {@code null} if this server is not running in a managed domain.
      */
@@ -1111,6 +1160,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
 
     /**
      * Gets whether this server is an independently managed server, not managed as part of a managed domain.
+     *
      * @return {@code true} if this server is an independently managed server
      */
     public boolean isStandalone() {
@@ -1119,6 +1169,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
 
     /**
      * Gets whether this server is a self-contained (no filesystem layout) or not.
+     *
      * @return {@code true} if this server is self-contained
      */
     public boolean isSelfContained() {
@@ -1128,7 +1179,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     /**
      * Gets the {@link RunningMode} that was in effect when this server was launched.
      *
-     * @return  the initial running mode
+     * @return the initial running mode
      */
     public RunningMode getInitialRunningMode() {
         return initialRunningMode;
@@ -1165,6 +1216,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
 
     /**
      * Gets the time when this process was started. Note that a process reload does not change this value.
+     *
      * @return the time, in ms since the epoch
      */
     public long getStartTime() {
@@ -1186,6 +1238,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
     /**
      * Determine the number of threads to use for the bootstrap service container. This reads
      * the {@link #BOOTSTRAP_MAX_THREADS} system property and if not set, defaults to 2*cpus.
+     *
      * @see Runtime#availableProcessors()
      * @return the maximum number of threads to use for the bootstrap service container.
      */
@@ -1198,7 +1251,7 @@ public class ServerEnvironment extends ProcessEnvironment implements Serializabl
             try {
                 int max = Integer.decode(maxThreads);
                 defaultThreads = Math.max(max, 1);
-            } catch(NumberFormatException ex) {
+            } catch (NumberFormatException ex) {
                 ServerLogger.ROOT_LOGGER.failedToParseCommandLineInteger(BOOTSTRAP_MAX_THREADS, maxThreads);
             }
         }
