@@ -1,0 +1,4 @@
+wildfly-configuration:
+  socket-binding-group:
+    standard-sockets:
+      port-offset: 0

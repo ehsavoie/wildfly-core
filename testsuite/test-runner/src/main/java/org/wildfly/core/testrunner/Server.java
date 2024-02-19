@@ -207,6 +207,8 @@ public class Server {
                 commandBuilder.addJavaOption("-ea")
                         .setBindAddressHint("management", managementAddress);
 
+                commandBuilder.setYamlFiles(yamlFiles);
+
                 if (jbossArgs != null) {
                     String[] args = jbossArgs.split("\\s+");
                     for (String a : args) {
