@@ -207,7 +207,7 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                         if (isExistingResource(xmlOperations, address)) {
                             yamlOperation.processOperation(rootRegistration, xmlOperations, postExtensionOps, address, name);
                         } else if (yamlOperation instanceof RemoveOperation) {
-                            //ignore
+                            MGMT_OP_LOGGER.removingUnexistingResource(address.toCLIStyleString());
                         } else {
                             if (yamlOperation instanceof UndefineOperation) {
                                 throw MGMT_OP_LOGGER.noResourceForUndefiningAttribute(name, address.toCLIStyleString());
@@ -294,9 +294,9 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                                     if (value != null) {
                                         if (value instanceof Operation) {
                                             if (value instanceof RemoveOperation) {
-                                                //ignore
+                                                MGMT_OP_LOGGER.removingUnexistingResource(address.toCLIStyleString());
                                             } else {
-                                                MGMT_OP_LOGGER.illegalOperationForAttribute(((Operation) value).getOperationName(), name, address.toPathStyleString());
+                                                MGMT_OP_LOGGER.illegalOperationForAttribute(((Operation) value).getOperationName(), name, address.toCLIStyleString());
                                             }
                                         } else {
                                             MGMT_OP_LOGGER.unexpectedValueForResource(value, address.toCLIStyleString(), name);
@@ -314,9 +314,9 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                                     if (value != null) {
                                         if (value instanceof Operation) {
                                             if (value instanceof RemoveOperation) {
-                                                //ignore
+                                                MGMT_OP_LOGGER.removingUnexistingResource(address.toCLIStyleString());
                                             } else {
-                                                MGMT_OP_LOGGER.illegalOperationForAttribute(((Operation) value).getOperationName(), name, address.toPathStyleString());
+                                                MGMT_OP_LOGGER.illegalOperationForAttribute(((Operation) value).getOperationName(), name, address.toCLIStyleString());
                                             }
                                         } else {
                                             MGMT_OP_LOGGER.unexpectedValueForResource(value, address.toCLIStyleString(), name);
@@ -608,7 +608,7 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
                 op.get(NAME).set(name);
                 postExtensionOps.add(new ParsedBootOp(op, operationEntry.getOperationHandler()));
             } else {
-                throw MGMT_OP_LOGGER.illegalOperationForAttribute(getOperationName(), name, address.toPathStyleString());
+                throw MGMT_OP_LOGGER.illegalOperationForAttribute(getOperationName(), name, address.toCLIStyleString());
             }
         }
 
@@ -634,7 +634,7 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
             if (operationEntry != null) {
                 AttributeAccess access = rootRegistration.getAttributeAccess(address, name);
                 if (!(access.getAttributeDefinition() instanceof ListAttributeDefinition)) {
-                    throw MGMT_OP_LOGGER.illegalOperationForAttribute(getOperationName(), name, address.toPathStyleString());
+                    throw MGMT_OP_LOGGER.illegalOperationForAttribute(getOperationName(), name, address.toCLIStyleString());
                 }
                 ListAttributeDefinition att = (ListAttributeDefinition) access.getAttributeDefinition();
                 AttributeDefinition type = att.getValueAttributeDefinition();

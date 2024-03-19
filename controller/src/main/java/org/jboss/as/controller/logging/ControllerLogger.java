@@ -3778,4 +3778,8 @@ public interface ControllerLogger extends BasicLogger {
     @LogMessage(level = WARN)
     @Message(id = 511, value = "No value is defined for attribute '%s'  at address '%s'.")
     void noAttributeValueDefined(String name, String address);
+
+    @LogMessage(level = WARN)
+    @Message(id = 512, value = "No resource exists at address '%s'. Ignoring the remove opreation.")
+    void removingUnexistingResource(String address);
 }
