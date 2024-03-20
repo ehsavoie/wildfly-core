@@ -197,7 +197,7 @@ public class YamlExtensionTestCase {
         } catch (RuntimeException ex) {
             Assert.assertFalse(container.isStarted());
             try (final BufferedReader reader = Files.newBufferedReader(basedir.resolve("log").resolve("server.log"), StandardCharsets.UTF_8)) {
-                Assert.assertTrue(reader.lines().anyMatch(line -> line.contains("WFLYCTL0505: Unsuported deployment yaml file hello.jar with attributes [empty]")));
+                Assert.assertTrue(reader.lines().anyMatch(line -> line.contains("WFLYCTL0507: Unsuported deployment yaml file hello.jar with attributes [empty]")));
             }
         } finally {
             container.stop();
