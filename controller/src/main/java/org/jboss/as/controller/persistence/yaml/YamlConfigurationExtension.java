@@ -75,6 +75,7 @@ import org.yaml.snakeyaml.nodes.Tag;
 public class YamlConfigurationExtension implements ConfigurationExtension {
 
     private static final String CONFIGURATION_ROOT_KEY = "wildfly-configuration";
+    private static final String YAML_CODEPOINT_LIMIT = "org.wildfly.configuration.extension.yaml.codepoint.limit";
 
     private static final String YAML_CONFIG = "--yaml";
     private static final String SHORT_YAML_CONFIG = "-y";
@@ -104,7 +105,12 @@ public class YamlConfigurationExtension implements ConfigurationExtension {
         for (Path file : files) {
             if (file != null && Files.exists(file) && Files.isRegularFile(file)) {
                 Map<String, Object> yamlConfig = Collections.emptyMap();
-                Yaml yaml = new Yaml(new OperationConstructor(new LoaderOptions()));
+                LoaderOptions loadingConfig = new LoaderOptions();
+                //Default to 3MB
+                loadingConfig.setCodePointLimit(
+                        Integer.parseInt(
+                                WildFlySecurityManager.getPropertyPrivileged(YAML_CODEPOINT_LIMIT, "3145728")));
+                Yaml yaml = new Yaml(new OperationConstructor(loadingConfig));
                 try (InputStream inputStream = Files.newInputStream(file)) {
                     yamlConfig = yaml.load(inputStream);
                 } catch (IOException ioex) {
