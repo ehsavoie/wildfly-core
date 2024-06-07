@@ -30,7 +30,7 @@ import org.jboss.as.controller.remote.TransactionalProtocolOperationHandler;
 import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.domain.controller.HostRegistrations;
 import org.jboss.as.domain.controller.logging.DomainControllerLogger;
-import org.jboss.as.domain.controller.operations.FetchMissingConfigurationHandler;
+import org.jboss.as.domain.controller.operations.sync.FetchMissingConfigurationHandler;
 import org.jboss.as.domain.controller.operations.coordination.DomainControllerLockIdUtils;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
 import org.jboss.as.protocol.mgmt.ManagementChannelAssociation;

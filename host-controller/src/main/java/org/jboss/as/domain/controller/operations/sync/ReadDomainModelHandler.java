@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.jboss.as.domain.controller.operations;
+package org.jboss.as.domain.controller.operations.sync;
 
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
@@ -28,6 +28,7 @@ class ReadDomainModelHandler implements OperationStepHandler {
         this.lock = lock;
     }
 
+    @Override
     public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
         // if the calling process has already acquired a lock, don't relock.
         if (lock) {

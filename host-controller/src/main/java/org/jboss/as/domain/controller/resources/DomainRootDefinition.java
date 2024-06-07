@@ -72,7 +72,7 @@ import org.jboss.as.domain.controller.LocalHostControllerInfo;
 import org.jboss.as.domain.controller.logging.DomainControllerLogger;
 import org.jboss.as.domain.controller.operations.ApplyExtensionsHandler;
 import org.jboss.as.domain.controller.operations.DomainServerLifecycleHandlers;
-import org.jboss.as.domain.controller.operations.GenericModelDescribeOperationHandler;
+import org.jboss.as.controller.operations.sync.GenericModelDescribeOperationHandler;
 import org.jboss.as.domain.controller.operations.LocalHostNameOperationHandler;
 import org.jboss.as.domain.controller.operations.ProcessTypeHandler;
 import org.jboss.as.domain.controller.operations.ResolveExpressionOnDomainHandler;

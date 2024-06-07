@@ -2,7 +2,7 @@
  * Copyright The WildFly Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.jboss.as.domain.controller.operations;
+package org.jboss.as.domain.controller.operations.sync;
 
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.EXTENSION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.GROUP;
@@ -71,7 +71,7 @@ public class ReadMasterDomainModelUtil {
 
         Resource transformedResource = transformers.transformRootResource(transformationInputs, domainRoot, ignoredTransformationRegistry);
         ReadMasterDomainModelUtil util = new ReadMasterDomainModelUtil();
-        util.describedResources = util.describeAsNodeList(PathAddress.EMPTY_ADDRESS, transformedResource, false);
+        util.describeAsNodeList(PathAddress.EMPTY_ADDRESS, transformedResource, false);
         return util;
     }
 
@@ -94,13 +94,10 @@ public class ReadMasterDomainModelUtil {
      *
      * @param rootAddress the address of the root resource being described
      * @param resource the root resource
-     * @return the list of resources
      */
-    private List<ModelNode> describeAsNodeList(PathAddress rootAddress, final Resource resource, boolean isRuntimeChange) {
-        final List<ModelNode> list = new ArrayList<ModelNode>();
-
-        describe(rootAddress, resource, list, isRuntimeChange);
-        return list;
+    private void describeAsNodeList(PathAddress rootAddress, final Resource resource, boolean isRuntimeChange) {
+        this.describedResources = new ArrayList<>();
+        describe(rootAddress, resource, this.describedResources, isRuntimeChange);
     }
 
     private void describe(final PathAddress base, final Resource resource, List<ModelNode> nodes, boolean isRuntimeChange) {

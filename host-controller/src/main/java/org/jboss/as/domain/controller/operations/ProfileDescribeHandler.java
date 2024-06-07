@@ -4,6 +4,7 @@
  */
 package org.jboss.as.domain.controller.operations;
 
+import org.jboss.as.controller.operations.sync.GenericModelDescribeOperationHandler;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DESCRIBE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.INCLUDES;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;

@@ -5,6 +5,7 @@
 
 package org.jboss.as.domain.controller.operations;
 
+import org.jboss.as.domain.controller.operations.sync.ReadMasterDomainModelUtil;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DOMAIN_MODEL;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.EXTENSION;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HOST;
@@ -79,7 +80,7 @@ public class ApplyExtensionsHandler implements OperationStepHandler {
         final List<ModelNode> bootOperations = new ArrayList<ModelNode>();
         for (final ModelNode extension : extensions) {
             final ModelNode e = new ModelNode();
-            e.get("domain-resource-address").add(EXTENSION, extension.asString());
+            e.get(ReadMasterDomainModelUtil.DOMAIN_RESOURCE_ADDRESS).add(EXTENSION, extension.asString());
             bootOperations.add(e);
         }
         final ModelNode operation = APPLY_EXTENSIONS.clone();

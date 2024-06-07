@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.jboss.as.domain.controller.operations;
+package org.jboss.as.domain.controller.operations.sync;
 
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADD;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.CONTENT;
@@ -39,13 +39,14 @@ import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.ProxyController;
 import org.jboss.as.controller.operations.common.Util;
+import org.jboss.as.controller.operations.sync.SyncModelParameters;
 import org.jboss.as.controller.registry.AttributeAccess;
 import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.domain.controller.ServerIdentity;
 import org.jboss.as.domain.controller.operations.coordination.ServerOperationResolver;
-import org.jboss.as.domain.controller.operations.deployment.SyncModelParameters;
+import org.jboss.as.host.controller.HostControllerEnvironment;
 import org.jboss.as.host.controller.ManagedServerBootCmdFactory;
 import org.jboss.as.host.controller.ManagedServerBootConfiguration;
 import org.jboss.as.host.controller.logging.HostControllerLogger;
@@ -74,7 +75,8 @@ class SyncServerStateOperationHandler implements OperationStepHandler {
     public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
         assert !context.isBooting() : "Should not be used when the context is booting";
         assert parameters.isFullModelTransfer() : "Should only be used during a full model transfer";
-        HostControllerLogger.ROOT_LOGGER.debug("Running Server Sync for the following servers: " + parameters.getServerProxies().keySet());
+        final Map<String, ProxyController> serverProxies = getServerProxies();
+        HostControllerLogger.ROOT_LOGGER.debug("Running Server Sync for the following servers: " + serverProxies.keySet());
 
         final Resource startResource = context.readResourceFromRoot(PathAddress.EMPTY_ADDRESS, true);
         final ModelNode startRoot = Resource.Tools.readModel(startResource);
@@ -84,7 +86,6 @@ class SyncServerStateOperationHandler implements OperationStepHandler {
         if (!startHostModel.hasDefined(SERVER_CONFIG)) {
             return;
         }
-        final Map<String, ProxyController> serverProxies = parameters.getServerProxies();
         final ServerOperationResolver resolver = new ServerOperationResolver(localHostName, serverProxies);
 
         context.addStep(operation, new OperationStepHandler() {
@@ -108,13 +109,13 @@ class SyncServerStateOperationHandler implements OperationStepHandler {
                             //In some unit tests the start config may be null
                             ManagedServerBootConfiguration startConfig =
                                     new ManagedServerBootCmdFactory(serverName, startRoot, startHostModel,
-                                            parameters.getHostControllerEnvironment(),
-                                            parameters.getDomainController().getExpressionResolver(), false).createConfiguration();
+                                            (HostControllerEnvironment) parameters.getEnvironment(),
+                                            parameters.getExpressionResolver(), false).createConfiguration();
 
                             ManagedServerBootConfiguration endConfig =
                                     new ManagedServerBootCmdFactory(serverName, endRoot, endHostModel,
-                                            parameters.getHostControllerEnvironment(),
-                                            parameters.getDomainController().getExpressionResolver(), false).createConfiguration();
+                                            (HostControllerEnvironment) parameters.getEnvironment(),
+                                            parameters.getExpressionResolver(), false).createConfiguration();
                             if (startConfig == null || !startConfig.compareServerLaunchCommand(endConfig)) {
                                 servers.put(serverName, SyncServerResultAction.RESTART_REQUIRED);
                             }
@@ -141,7 +142,7 @@ class SyncServerStateOperationHandler implements OperationStepHandler {
                     public void handleResult(OperationContext.ResultAction resultAction, OperationContext context, ModelNode operation) {
                         if (resultAction == OperationContext.ResultAction.KEEP) {
                             for (ContentReference ref : contentDownloader.removedContent) {
-                                parameters.getContentRepository().removeContent(ref);
+                                ((DomainSyncModelParameters)parameters).getContentRepository().removeContent(ref);
                             }
                         }
                     }
@@ -223,6 +224,10 @@ class SyncServerStateOperationHandler implements OperationStepHandler {
         return restart;
     }
 
+    private Map<String, ProxyController> getServerProxies() {
+        return ((DomainSyncModelParameters) parameters).getServerProxies();
+    }
+
     private class ContentDownloader {
         private final ModelNode startRoot;
         private final ModelNode endRoot;
@@ -262,7 +267,7 @@ class SyncServerStateOperationHandler implements OperationStepHandler {
                             deploymentHashes.put(deployment, hashes);
                             for (ModelNode contentItem : operation.get(CONTENT).asList()) {
                                 hashes.add(ModelContentReference.fromModelAddress(operationAddress, contentItem.get(HASH).asBytes()));
-                                if (parameters.getHostControllerEnvironment().isBackupDomainFiles()) {
+                                if (((HostControllerEnvironment) parameters.getEnvironment()).isBackupDomainFiles()) {
                                     relevantDeployments.add(firstElement.getValue());
                                 }
                             }
@@ -282,21 +287,19 @@ class SyncServerStateOperationHandler implements OperationStepHandler {
                         }
                         break;
                     default:
-                        return;
                 }
             } else if (operationAddress.size() == 2) {
-                if( firstElement.getKey().equals(SERVER_GROUP) &&
+                if( SERVER_GROUP.equals(firstElement.getKey()) &&
                     serversByGroup.containsKey(firstElement.getValue())) {
                     PathElement secondElement = operationAddress.getElement(1);
-                    if (secondElement.getKey().equals(DEPLOYMENT)) {
+                    if (DEPLOYMENT.equals(secondElement.getKey())) {
                         relevantDeployments.add(secondElement.getValue());
                         affectedGroups.add(firstElement.getValue());
                     }
-                } else if (firstElement.getKey().equals(DEPLOYMENT_OVERLAY)) {
+                } else if (DEPLOYMENT_OVERLAY.equals(firstElement.getKey())) {
                     requiredContent.add(ModelContentReference.fromModelAddress(operationAddress, operation.get(CONTENT).asBytes()));
                 }
             }
-            return;
         }
 
         private void makeExistingDeploymentUpdatedAffected(final PathElement deploymentElement, final ModelNode operation) {
@@ -343,9 +346,8 @@ class SyncServerStateOperationHandler implements OperationStepHandler {
                     requiredContent.addAll(hashes);
                 }
             }
-            for (final ContentReference reference : requiredContent) {
-                parameters.getFileRepository().getDeploymentFiles(reference);
-                parameters.getContentRepository().addContentReference(reference);
+            for (ContentReference reference : requiredContent) {
+                ((DomainSyncModelParameters)parameters).pullFile(reference);
             }
 
             if (updateRolloutPlans) {
@@ -360,7 +362,7 @@ class SyncServerStateOperationHandler implements OperationStepHandler {
                 }
                 ManagedDMRContentTypeResource rolloutPlansResource =
                         new ManagedDMRContentTypeResource(PathAddress.pathAddress(rolloutPlansElement), ROLLOUT_PLAN,
-                                rolloutPlansHash, parameters.getContentRepository());
+                                rolloutPlansHash, ((DomainSyncModelParameters)parameters).getContentRepository());
                 domainRootResource.registerChild(rolloutPlansElement, rolloutPlansResource);
             }
 
@@ -377,7 +379,7 @@ class SyncServerStateOperationHandler implements OperationStepHandler {
             final Map<String, Set<String>> result = new HashMap<>();
             if (hostModel.hasDefined(SERVER_CONFIG)) {
                 for (final Property config : hostModel.get(SERVER_CONFIG).asPropertyList()) {
-                    if (parameters.getServerProxies().containsKey(config.getName())) {
+                    if (getServerProxies().containsKey(config.getName())) {
                         final String group = config.getValue().get(GROUP).asString();
 
                         Set<String> servers = result.get(group);
@@ -392,5 +394,6 @@ class SyncServerStateOperationHandler implements OperationStepHandler {
             return result;
         }
     }
+
 
 }

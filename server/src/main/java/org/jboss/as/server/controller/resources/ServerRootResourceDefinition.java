@@ -20,6 +20,7 @@ import org.jboss.as.controller.BootErrorCollector;
 import org.jboss.as.controller.CapabilityRegistry;
 import org.jboss.as.controller.CompositeOperationHandler;
 import org.jboss.as.controller.ControlledProcessState;
+import org.jboss.as.controller.ExpressionResolver;
 import org.jboss.as.controller.ModelOnlyWriteAttributeHandler;
 import org.jboss.as.controller.ModelVersion;
 import org.jboss.as.controller.NoopOperationStepHandler;
@@ -62,6 +63,7 @@ import org.jboss.as.controller.operations.global.GlobalNotifications;
 import org.jboss.as.controller.operations.global.GlobalOperationHandlers;
 import org.jboss.as.controller.operations.global.ReadConfigAsFeaturesOperationHandler;
 import org.jboss.as.controller.operations.global.ReadFeatureDescriptionHandler;
+import org.jboss.as.controller.operations.sync.GenericModelDescribeOperationHandler;
 import org.jboss.as.controller.operations.validation.EnumValidator;
 import org.jboss.as.controller.operations.validation.IntRangeValidator;
 import org.jboss.as.controller.operations.validation.ParameterValidator;
@@ -99,6 +101,7 @@ import org.jboss.as.server.operations.InstallationReportHandler;
 import org.jboss.as.server.operations.InstanceUuidReadHandler;
 import org.jboss.as.server.operations.LaunchTypeHandler;
 import org.jboss.as.server.operations.ProcessTypeHandler;
+import org.jboss.as.server.operations.sync.ReadServerModelOperationHandler;
 import org.jboss.as.server.operations.RunningModeReadHandler;
 import org.jboss.as.server.operations.ServerDomainProcessReloadHandler;
 import org.jboss.as.server.operations.ServerDomainProcessShutdownHandler;
@@ -111,6 +114,7 @@ import org.jboss.as.server.operations.ServerVersionOperations.DefaultEmptyListAt
 import org.jboss.as.server.operations.SetServerGroupHostHandler;
 import org.jboss.as.server.operations.SuspendStateReadHandler;
 import org.jboss.as.server.operations.WriteConfigHandler;
+import org.jboss.as.server.operations.sync.ReadServerOperationsHandler;
 import org.jboss.as.server.services.net.InterfaceResourceDefinition;
 import org.jboss.as.server.services.net.NetworkInterfaceRuntimeHandler;
 import org.jboss.as.server.services.net.SocketBindingGroupResourceDefinition;
@@ -266,6 +270,7 @@ public class ServerRootResourceDefinition extends SimpleResourceDefinition {
     private final CapabilityRegistry capabilityRegistry;
     private final MutableRootResourceRegistrationProvider rootResourceRegistrationProvider;
     private final BootErrorCollector bootErrorCollector;
+    private final ExpressionResolver expressionResolver;
 
     public ServerRootResourceDefinition(
             final ContentRepository contentRepository,
@@ -282,7 +287,8 @@ public class ServerRootResourceDefinition extends SimpleResourceDefinition {
             final ManagedAuditLogger auditLogger,
             final MutableRootResourceRegistrationProvider rootResourceRegistrationProvider,
             final BootErrorCollector bootErrorCollector,
-            final CapabilityRegistry capabilityRegistry) {
+            final CapabilityRegistry capabilityRegistry,
+            final ExpressionResolver expressionResolver) {
         super(new Parameters(ResourceRegistration.root(), ServerDescriptions.getResourceDescriptionResolver(SERVER, false))
                 .addCapabilities(PATH_CAPABILITY.fromBaseCapability(ServerEnvironment.HOME_DIR),
                         PATH_CAPABILITY.fromBaseCapability(ServerEnvironment.SERVER_BASE_DIR),
@@ -309,6 +315,7 @@ public class ServerRootResourceDefinition extends SimpleResourceDefinition {
         this.securityIdentitySupplier = securityIdentitySupplier;
         this.rootResourceRegistrationProvider = rootResourceRegistrationProvider;
         this.bootErrorCollector = bootErrorCollector;
+        this.expressionResolver = expressionResolver;
     }
 
     @Override
@@ -366,6 +373,9 @@ public class ServerRootResourceDefinition extends SimpleResourceDefinition {
             SnapshotTakeHandler snapshotTake = new SnapshotTakeHandler(extensibleConfigurationPersister);
             resourceRegistration.registerOperationHandler(SnapshotTakeHandler.DEFINITION, snapshotTake);
             resourceRegistration.registerOperationHandler(WriteConfigHandler.DEFINITION, WriteConfigHandler.INSTANCE);
+            resourceRegistration.registerOperationHandler(GenericModelDescribeOperationHandler.DEFINITION, GenericModelDescribeOperationHandler.INSTANCE, true);
+            resourceRegistration.registerOperationHandler(ReadServerModelOperationHandler.DEFINITION, new ReadServerModelOperationHandler(false));
+            resourceRegistration.registerOperationHandler(ReadServerOperationsHandler.DEFINITION, new ReadServerOperationsHandler());
         }
 
         // Ops for internal control of the server by the HC
@@ -422,10 +432,14 @@ public class ServerRootResourceDefinition extends SimpleResourceDefinition {
             resourceRegistration.registerOperationHandler(ServerResumeHandler.DEFINITION, ServerResumeHandler.INSTANCE);
         }
 
-        // The System.exit() based shutdown command is only valid for a server process directly launched from the command line
-        if (serverEnvironment.getLaunchType() == ServerEnvironment.LaunchType.STANDALONE) {
-            ServerShutdownHandler serverShutdownHandler = new ServerShutdownHandler(processState, serverEnvironment);
-            resourceRegistration.registerOperationHandler(ServerShutdownHandler.DEFINITION, serverShutdownHandler);
+        // Runtime operations
+        if (serverEnvironment != null) {
+            // The System.exit() based shutdown command is only valid for a server process directly launched from the command line
+            if (serverEnvironment.getLaunchType() == ServerEnvironment.LaunchType.STANDALONE) {
+                ServerShutdownHandler serverShutdownHandler = new ServerShutdownHandler(processState, serverEnvironment);
+                resourceRegistration.registerOperationHandler(ServerShutdownHandler.DEFINITION, serverShutdownHandler);
+
+            }
         }
 
     }
@@ -480,6 +494,7 @@ public class ServerRootResourceDefinition extends SimpleResourceDefinition {
 
         // Server environment
         resourceRegistration.registerSubModel(ServerEnvironmentResourceDescription.of(serverEnvironment));
+        resourceRegistration.registerSubModel(new SynchronizationResourceDefinition(extensionRegistry, expressionResolver));
 
         // System Properties
         resourceRegistration.registerSubModel(SystemPropertyResourceDefinition.createForStandaloneServer(serverEnvironment));

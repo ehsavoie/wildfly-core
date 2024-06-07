@@ -3782,4 +3782,7 @@ public interface ControllerLogger extends BasicLogger {
     @LogMessage(level = WARN)
     @Message(id = 512, value = "No resource exists at address '%s'. Ignoring the remove opreation.")
     void removingUnexistingResource(String address);
+
+    @Message(id = 513, value = "Cannot synchronize the model due to missing extensions: %s")
+    OperationFailedException missingExtensions(Set<String> missingExtensions);
 }

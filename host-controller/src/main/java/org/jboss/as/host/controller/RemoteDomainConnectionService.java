@@ -38,6 +38,7 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.security.sasl.SaslException;
 
 import org.jboss.as.controller.Cancellable;
+import org.jboss.as.controller.ExpressionResolver;
 import org.jboss.as.controller.HashUtil;
 import org.jboss.as.controller.ModelController;
 import org.jboss.as.controller.OperationContext;
@@ -61,14 +62,13 @@ import org.jboss.as.controller.remote.ResponseAttachmentInputStreamSupport;
 import org.jboss.as.controller.remote.TransactionalProtocolClient;
 import org.jboss.as.controller.remote.TransactionalProtocolHandlers;
 import org.jboss.as.controller.remote.TransactionalProtocolOperationHandler;
-import org.jboss.as.domain.controller.DomainController;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
 import org.jboss.as.domain.controller.SlaveRegistrationException;
-import org.jboss.as.domain.controller.operations.FetchMissingConfigurationHandler;
-import org.jboss.as.domain.controller.operations.SyncDomainModelOperationHandler;
-import org.jboss.as.domain.controller.operations.SyncServerGroupOperationHandler;
+import org.jboss.as.domain.controller.operations.sync.FetchMissingConfigurationHandler;
+import org.jboss.as.domain.controller.operations.sync.SyncDomainModelOperationHandler;
+import org.jboss.as.domain.controller.operations.sync.SyncServerGroupOperationHandler;
 import org.jboss.as.domain.controller.operations.coordination.DomainControllerLockIdUtils;
-import org.jboss.as.domain.controller.operations.deployment.SyncModelParameters;
+import org.jboss.as.domain.controller.operations.sync.DomainSyncModelParameters;
 import org.jboss.as.host.controller.discovery.DiscoveryOption;
 import org.jboss.as.host.controller.discovery.RemoteDomainControllerConnectionConfiguration;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
@@ -156,7 +156,7 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
     private final ContentRepository contentRepository;
     private final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry;
     private final HostControllerRegistrationHandler.OperationExecutor operationExecutor;
-    private final DomainController domainController;
+    private final ExpressionResolver expressionResolver;
     private final HostControllerEnvironment hostControllerEnvironment;
     private final RunningMode runningMode;
     private final File tempDir;
@@ -185,7 +185,7 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
                                           final ContentRepository contentRepository,
                                           final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry,
                                           final HostControllerRegistrationHandler.OperationExecutor operationExecutor,
-                                          final DomainController domainController,
+                                          final ExpressionResolver expressionResolver,
                                           final HostControllerEnvironment hostControllerEnvironment,
                                           final ExecutorService executor,
                                           final RunningMode runningMode,
@@ -200,7 +200,7 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
         remoteFileRepository.setRemoteFileRepositoryExecutor(remoteFileRepositoryExecutor);
         this.ignoredDomainResourceRegistry = ignoredDomainResourceRegistry;
         this.operationExecutor = operationExecutor;
-        this.domainController = domainController;
+        this.expressionResolver = expressionResolver;
         this.hostControllerEnvironment = hostControllerEnvironment;
         this.executor = executor;
         this.runningMode = runningMode;
@@ -218,7 +218,7 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
                                                         final ContentRepository contentRepository,
                                                         final IgnoredDomainResourceRegistry ignoredDomainResourceRegistry,
                                                         final HostControllerRegistrationHandler.OperationExecutor operationExecutor,
-                                                        final DomainController domainController,
+                                                        final ExpressionResolver expressionResolver,
                                                         final HostControllerEnvironment hostControllerEnvironment,
                                                         final ExecutorService executor,
                                                         final RunningMode currentRunningMode,
@@ -226,7 +226,7 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
                                                         final AtomicBoolean domainConfigAvailable) {
         RemoteDomainConnectionService service = new RemoteDomainConnectionService(controller, extensionRegistry, localHostControllerInfo,
                 remoteFileRepository, contentRepository,
-                ignoredDomainResourceRegistry, operationExecutor, domainController,
+                ignoredDomainResourceRegistry, operationExecutor, expressionResolver,
                 hostControllerEnvironment, executor, currentRunningMode, serverProxies, domainConfigAvailable);
         ServiceBuilder<MasterDomainControllerClient> builder = serviceTarget.addService(MasterDomainControllerClient.SERVICE_NAME, service)
                 .addDependency(ManagementRemotingServices.MANAGEMENT_ENDPOINT, Endpoint.class, service.endpointInjector)
@@ -438,8 +438,8 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
                 syncOperation.get(DOMAIN_MODEL).set(result.get(RESULT));
 
                 // Execute the handler to synchronize the model
-                SyncModelParameters parameters =
-                        new SyncModelParameters(domainController, ignoredDomainResourceRegistry,
+                DomainSyncModelParameters parameters =
+                        new DomainSyncModelParameters(expressionResolver, ignoredDomainResourceRegistry,
                                 hostControllerEnvironment, extensionRegistry, operationExecutor, false, serverProxies,
                                 remoteFileRepository, contentRepository);
                 final SyncServerGroupOperationHandler handler =
@@ -567,8 +567,8 @@ public class RemoteDomainConnectionService implements MasterDomainControllerClie
     private boolean applyRemoteDomainModel(final List<ModelNode> bootOperations, final HostInfo hostInfo) {
         try {
             HostControllerLogger.ROOT_LOGGER.debug("Applying domain level boot operations provided by master");
-            SyncModelParameters parameters =
-                    new SyncModelParameters(domainController, ignoredDomainResourceRegistry,
+            DomainSyncModelParameters parameters =
+                    new DomainSyncModelParameters(expressionResolver, ignoredDomainResourceRegistry,
                             hostControllerEnvironment, extensionRegistry, operationExecutor, true, serverProxies, remoteFileRepository, contentRepository);
             final SyncDomainModelOperationHandler handler =
                     new SyncDomainModelOperationHandler(hostInfo, parameters);

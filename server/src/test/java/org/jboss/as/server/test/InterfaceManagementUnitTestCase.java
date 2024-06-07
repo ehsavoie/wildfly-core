@@ -279,6 +279,7 @@ public class InterfaceManagementUnitTestCase {
         final ServerEnvironment environment;
         final ExtensionRegistry extensionRegistry;
         final CapabilityRegistry capabilityRegistry;
+        private final ExpressionResolver expressionResolver;
         volatile ManagementResourceRegistration rootRegistration;
         volatile Exception error;
 
@@ -289,6 +290,7 @@ public class InterfaceManagementUnitTestCase {
             this.persister = persister;
             this.processState = processState;
             this.rootResourceDefinition = rootResourceDefinition;
+            this.expressionResolver = ExpressionResolver.TEST_RESOLVER;
 
             Properties properties = new Properties();
             properties.put("jboss.home.dir", System.getProperty("basedir", ".") + File.separatorChar + "target");
@@ -310,7 +312,7 @@ public class InterfaceManagementUnitTestCase {
         public void start(StartContext context) throws StartException {
             rootResourceDefinition.setDelegate(new ServerRootResourceDefinition(MockRepository.INSTANCE,
                     persister, environment, processState, null, extensionRegistry, false, MOCK_PATH_MANAGER, null,
-                    authorizer, securityIdentitySupplier, AuditLogger.NO_OP_LOGGER, getMutableRootResourceRegistrationProvider(), getBootErrorCollector(), capabilityRegistry));
+                    authorizer, securityIdentitySupplier, AuditLogger.NO_OP_LOGGER, getMutableRootResourceRegistrationProvider(), getBootErrorCollector(), capabilityRegistry, expressionResolver));
             super.start(context);
         }
 

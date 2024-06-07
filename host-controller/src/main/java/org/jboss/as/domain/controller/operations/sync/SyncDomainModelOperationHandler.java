@@ -3,17 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.jboss.as.domain.controller.operations;
+package org.jboss.as.domain.controller.operations.sync;
 
 import java.util.Set;
 
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.OperationStepHandler;
-import org.jboss.as.controller.extension.ExtensionRegistry;
+import org.jboss.as.controller.operations.sync.SyncModelParameters;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.transform.Transformers;
-import org.jboss.as.domain.controller.operations.deployment.SyncModelParameters;
 import org.jboss.as.host.controller.mgmt.HostInfo;
 import org.jboss.dmr.ModelNode;
 
@@ -29,26 +28,23 @@ import org.jboss.dmr.ModelNode;
 public class SyncDomainModelOperationHandler extends SyncModelHandlerBase {
 
     private final HostInfo hostInfo;
-    private final ExtensionRegistry extensionRegistry;
 
-    public SyncDomainModelOperationHandler(HostInfo hostInfo,
-                                           SyncModelParameters parameters) {
-        super(parameters);
+    public SyncDomainModelOperationHandler(HostInfo hostInfo, SyncModelParameters parameters) {
+        super((DomainSyncModelParameters)parameters);
         this.hostInfo = hostInfo;
-        this.extensionRegistry = parameters.getExtensionRegistry();
     }
 
     @Override
-    Transformers.ResourceIgnoredTransformationRegistry createRegistry(OperationContext context, Resource remoteModel, Set<String> remoteExtensions) {
+    protected Transformers.ResourceIgnoredTransformationRegistry createRegistry(OperationContext context, Resource remoteModel, Set<String> remoteExtensions) {
         final ReadMasterDomainModelUtil.RequiredConfigurationHolder rc =
-                ReadMasterDomainModelUtil.populateHostResolutionContext(hostInfo, remoteModel, extensionRegistry);
+                ReadMasterDomainModelUtil.populateHostResolutionContext(hostInfo, remoteModel, parameters.getExtensionRegistry());
         return ReadMasterDomainModelUtil.createHostIgnoredRegistry(hostInfo, rc);
     }
 
     @Override
     public void execute(OperationContext context, ModelNode operation) throws OperationFailedException {
         //Indicate to the IgnoredClonedProfileRegistry that we should clear the registry
-        getParameters().getIgnoredResourceRegistry().getIgnoredClonedProfileRegistry().initializeModelSync();
+        parameters.initializeModelSync();
 
         context.addStep(new OperationStepHandler() {
             @Override
@@ -60,7 +56,7 @@ public class SyncDomainModelOperationHandler extends SyncModelHandlerBase {
         context.completeStep(new OperationContext.ResultHandler() {
             @Override
             public void handleResult(OperationContext.ResultAction resultAction, OperationContext context, ModelNode operation) {
-                getParameters().getIgnoredResourceRegistry().getIgnoredClonedProfileRegistry().complete(resultAction == OperationContext.ResultAction.ROLLBACK);
+                parameters.complete(resultAction == OperationContext.ResultAction.ROLLBACK);
             }
         });
     }

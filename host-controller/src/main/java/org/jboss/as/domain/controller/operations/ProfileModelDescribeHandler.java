@@ -5,6 +5,7 @@
 
 package org.jboss.as.domain.controller.operations;
 
+import org.jboss.as.controller.operations.sync.GenericModelDescribeOperationHandler;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.PROFILE;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUBSYSTEM;
@@ -32,10 +33,10 @@ public class ProfileModelDescribeHandler extends GenericModelDescribeOperationHa
     @Override
     protected void addChildOperation(PathAddress parent, List<ModelNode> operations, ModelNode results) {
         assert parent.size() == 1;
-        assert parent.getLastElement().getKey().equals(PROFILE);
+        assert PROFILE.equals(parent.getLastElement().getKey());
         for (final ModelNode operation : operations) {
             final PathAddress child = PathAddress.pathAddress(operation.require(OP_ADDR));
-            assert child.getElement(0).getKey().equals(SUBSYSTEM);
+            assert SUBSYSTEM.equals(child.getElement(0).getKey());
             operation.get(OP_ADDR).set(parent.append(child).toModelNode());
             results.add(operation);
         }

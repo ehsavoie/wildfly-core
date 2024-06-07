@@ -28,7 +28,7 @@ import org.jboss.as.controller.registry.ImmutableManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
-import org.jboss.as.domain.controller.operations.SyncModelOperationHandlerWrapper;
+import org.jboss.as.domain.controller.operations.sync.SyncModelOperationHandlerWrapper;
 import org.jboss.as.host.controller.ServerInventory;
 import org.jboss.as.host.controller.ignored.IgnoredDomainResourceRegistry;
 import org.jboss.dmr.ModelNode;

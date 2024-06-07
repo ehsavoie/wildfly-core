@@ -41,7 +41,7 @@ import org.jboss.as.controller.registry.Resource;
 import org.jboss.as.controller.transform.Transformers;
 import org.jboss.as.domain.controller.LocalHostControllerInfo;
 import org.jboss.as.domain.controller.logging.DomainControllerLogger;
-import org.jboss.as.domain.controller.operations.ReadMasterDomainModelUtil;
+import org.jboss.as.domain.controller.operations.sync.ReadMasterDomainModelUtil;
 import org.jboss.as.host.controller.IgnoredNonAffectedServerGroupsUtil;
 import org.jboss.as.host.controller.IgnoredNonAffectedServerGroupsUtil.ServerConfigInfo;
 import org.jboss.as.host.controller.RemoteDomainConnectionService;

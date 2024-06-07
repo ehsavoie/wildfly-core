@@ -3,22 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.jboss.as.domain.controller.operations;
+package org.jboss.as.domain.controller.operations.sync;
 
+import org.jboss.as.controller.operations.sync.GenericModelDescribeOperationHandler;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.HOST;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUBSYSTEM;
 
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
-import org.jboss.as.controller.OperationStepHandler;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.SimpleOperationDefinition;
 import org.jboss.as.controller.SimpleOperationDefinitionBuilder;
 import org.jboss.as.controller.access.management.SensitiveTargetAccessConstraintDefinition;
 import org.jboss.as.controller.descriptions.common.ControllerResolver;
-import org.jboss.as.controller.operations.PathAddressFilter;
+import org.jboss.as.controller.operations.sync.PathAddressFilter;
 import org.jboss.as.controller.operations.common.OrderedChildTypesAttachment;
+import org.jboss.as.controller.operations.sync.ReadOperationsHandler;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
@@ -29,22 +30,18 @@ import org.jboss.dmr.ModelType;
  *
  * @author Emanuel Muckenhuber
  */
-public class ReadMasterDomainOperationsHandler implements OperationStepHandler {
+public class ReadMasterDomainOperationsHandler implements ReadOperationsHandler {
 
     public static final String OPERATION_NAME = "read-master-domain-operations";
 
-    private static final PathAddressFilter DEFAULT_FILTER = new PathAddressFilter(true);
+    // Ignore the local host element, since it's represented as normal a model and not a proxy
+    private static final PathAddressFilter DEFAULT_FILTER = PathAddressFilter.Builder.create().setAccept(true).addReject(PathAddress.pathAddress(PathElement.pathElement(HOST))).build();
     public static final SimpleOperationDefinition DEFINITION = new SimpleOperationDefinitionBuilder("model-operations", ControllerResolver.getResolver(SUBSYSTEM))
             .addAccessConstraint(SensitiveTargetAccessConstraintDefinition.READ_WHOLE_CONFIG)
             .setReplyType(ModelType.LIST)
             .setReplyValueType(ModelType.OBJECT)
             .setPrivateEntry()
             .build();
-
-    static {
-        // Ignore the local host element, since it's represented as normal a model and not a proxy
-        DEFAULT_FILTER.addReject(PathAddress.pathAddress(PathElement.pathElement(HOST)));
-    }
 
     private final OrderedChildTypesAttachment orderedChildTypesAttachment = new OrderedChildTypesAttachment();
 
@@ -59,7 +56,8 @@ public class ReadMasterDomainOperationsHandler implements OperationStepHandler {
         context.addStep(operation, GenericModelDescribeOperationHandler.INSTANCE, OperationContext.Stage.MODEL, true);
     }
 
-    OrderedChildTypesAttachment getOrderedChildTypes() {
+    @Override
+    public OrderedChildTypesAttachment getOrderedChildTypes() {
         return orderedChildTypesAttachment;
     }
 }
