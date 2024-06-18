@@ -6,6 +6,7 @@ wildfly-configuration:
                     path: test.jar
                     relative-to: jboss.server.base.dir
                     archive: true
+                    enabled: true
         hello.jar:
             content:
                 - 
