@@ -17,6 +17,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RUN
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.RUNTIME_NAME;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.SUCCESS;
 import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.UUID;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ENABLED;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -264,6 +265,7 @@ public class YamlExtensionTestCase {
             ModelNode deployment = readDeployment(client, "test.jar");
             Assert.assertEquals("test.jar", deployment.get(NAME).asString());
             Assert.assertEquals("test.jar", deployment.get(RUNTIME_NAME).asString());
+            Assert.assertEquals("true", deployment.get(ENABLED).asString());
             ModelNode contentItemNode = deployment.get(CONTENT).get(0);
             Assert.assertEquals("test.jar", contentItemNode.get(PATH).asString());
             Assert.assertEquals("jboss.server.base.dir", contentItemNode.get(RELATIVE_TO).asString());
