@@ -140,6 +140,7 @@ public class ReadFeatureDescriptionTestCase {
                     Stability.fromString(prop.getValue().asString());
                     break;
                 case ANNOTATION:
+                case "description":
                 case "params":
                 case "refs":
                 case "provides":

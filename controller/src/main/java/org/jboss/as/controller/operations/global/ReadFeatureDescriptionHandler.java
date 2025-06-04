@@ -309,6 +309,7 @@ public class ReadFeatureDescriptionHandler extends GlobalOperationHandlers.Abstr
                 .getModelDescription(locale);
         final ModelNode feature = result.get(FEATURE);
         feature.get(ModelDescriptionConstants.NAME).set(registration.getFeature());
+        feature.get(ModelDescriptionConstants.DESCRIPTION).set(resourceDescriptionNode.get(ModelDescriptionConstants.DESCRIPTION));
         final DescriptionProvider addDescriptionProvider = registration.getOperationDescription(PathAddress.EMPTY_ADDRESS, ModelDescriptionConstants.ADD);
         final ModelNode requestProperties;
         final Map<String, String> featureParamMappings;
@@ -616,6 +617,7 @@ public class ReadFeatureDescriptionHandler extends GlobalOperationHandlers.Abstr
                 paramName = att.getName();
             }
             param.get(ModelDescriptionConstants.NAME).set(paramName);
+            param.get(ModelDescriptionConstants.DESCRIPTION).set(attDescription.get(ModelDescriptionConstants.DESCRIPTION));
             paramNames.add(paramName);
             if (attDescription.hasDefined(NILLABLE) && attDescription.get(NILLABLE).asBoolean()) {
                 param.get(NILLABLE).set(true);
